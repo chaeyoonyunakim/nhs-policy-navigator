@@ -1,4 +1,4 @@
-# NHS Policy Navigator — Adaptive Retrieval Agent
+# NHS Policy Navigator — Adaptive Multi-Source Retrieval Agent
 
 > Built for the **MongoDB Agentic Evolution Hackathon** (London, May 2025)  
 > Theme: **Adaptive Retrieval** — an agentic system that actively modifies its query approach based on input and learns from past performance.
@@ -7,18 +7,23 @@
 
 ## What it does
 
-NHS Policy Navigator is an adaptive retrieval agent over the **NHS 10 Year Health Plan "Fit for the Future" (July 2025)**. It doesn't just do RAG — it reasons about *how* to retrieve before it retrieves.
+NHS Policy Navigator is an adaptive retrieval agent over the **NHS 10 Year Health Plan "Fit for the Future" (July 2025)** plus live NHS England updates. It doesn't just do RAG — it reasons about *how* to retrieve and *which sources* to use before it retrieves.
 
 For every query, the agent:
 
 1. **Classifies** the question into one of four types: `factual`, `conceptual`, `comparative`, or `gap_analysis`
-2. **Selects a retrieval strategy** based on type — keyword search, vector search, or hybrid — using MongoDB Atlas
-3. **Checks historical performance** — after 5+ queries of the same type, the agent switches to whichever strategy has scored highest, adapting autonomously
-4. **Generates a grounded answer** citing page numbers from the source document
-5. **Self-evaluates** the result quality (1–5 score) and **logs everything back to MongoDB**, enabling future adaptation
-6. **Narrates the answer** via ElevenLabs voice synthesis
+2. **Routes to sources by type**:
+   - `factual` -> NHS plan
+   - `conceptual` / `comparative` -> NHS plan + live NHS news
+   - `gap_analysis` -> NHS plan + live NHS news + post-July-2025 NHS publications
+3. **Selects a retrieval strategy** based on type — keyword search, vector search, or hybrid — using MongoDB Atlas
+4. **Re-ranks retrieved chunks** by query relevance before generation
+5. **Checks historical performance** — after 5+ queries of the same type, the agent switches to whichever strategy has scored highest, adapting autonomously
+6. **Generates a grounded answer** with source-aware citations (plan pages + live sources where relevant)
+7. **Self-evaluates** result quality (1–5 score) and **logs everything back to MongoDB**, enabling future adaptation
+8. **Narrates the answer** via ElevenLabs voice synthesis
 
-The right sidebar shows live strategy performance and query history pulled directly from MongoDB — making the adaptation visible in real time.
+The UI also surfaces live news/publication cards and shows strategy performance + query history from MongoDB, making adaptation visible in real time.
 
 ---
 
@@ -36,9 +41,15 @@ The right sidebar shows live strategy performance and query history pulled direc
 
 ---
 
-## Source documents
+## Sources used
 
-The agent is built on the **NHS 10 Year Health Plan for England — Fit for the Future (July 2025)**.
+Primary corpus:
+- **NHS 10 Year Health Plan for England — Fit for the Future (July 2025)**
+- **Executive summary** of the same plan
+
+Live/secondary sources (fetched at query time):
+- **NHS England RSS feed** (`https://www.england.nhs.uk/feed/`) for recent news
+- **NHS publications post 3 July 2025** (live RSS filter + curated seed publications)
 
 Download both PDFs and place them in the project root before running ingestion:
 
@@ -86,15 +97,17 @@ LANGCHAIN_API_KEY=lsv2_...
 
 Download both PDFs from [https://www.england.nhs.uk/long-term-plan/](https://www.england.nhs.uk/long-term-plan/) and place them in the project root (see filenames above).
 
-### 4. Ingest documents into MongoDB
+### 4. Ingest NHS plan documents into MongoDB
 
 ```bash
 python ingest.py
 ```
 
-This chunks both PDFs, generates embeddings, loads 586 chunks into MongoDB Atlas, and creates the vector + text search indexes. Takes ~5–10 minutes.
+This chunks both PDFs, generates embeddings, loads chunks into MongoDB Atlas, and creates the vector + text search indexes. Takes ~5–10 minutes.
 
-Wait for both indexes to show **READY** in Atlas UI → Cluster → Search Indexes before proceeding.
+Wait for both indexes to show **READY** in Atlas UI -> Cluster -> Search Indexes before proceeding.
+
+Note: live news and publication sources are fetched at query time and do not require ingestion.
 
 ### 5. Run the app
 
@@ -143,12 +156,16 @@ Two indexes are created automatically by `ingest.py`:
 | How does hospital care compare to community care? | `comparative` | Hybrid search |
 | Does the plan address mental health in prisons? | `gap_analysis` | Vector search |
 
+For `conceptual`, `comparative`, and `gap_analysis`, results may include:
+- Ranked **live NHS news** context from RSS
+- Ranked **post-July-2025 NHS publications** context (for `gap_analysis`)
+
 ---
 
 ## Project structure
 
 ```
-├── agent.py          # Core adaptive retrieval logic
+├── agent.py          # Core multi-source adaptive retrieval logic
 ├── app.py            # FastAPI backend (query, stats, narrate endpoints)
 ├── ingest.py         # PDF ingestion + MongoDB index creation
 ├── requirements.txt
@@ -161,12 +178,22 @@ Two indexes are created automatically by `ingest.py`:
 
 ---
 
+## Adaptive retrieval behavior
+
+- **Classification**: `factual`, `conceptual`, `comparative`, `gap_analysis`
+- **Strategy options**: `text_search`, `vector_search`, `hybrid_search`
+- **Learning rule**: if a query type has >=5 historical runs, use the best average-scoring strategy for that type
+- **Re-ordering**: plan chunks are re-ranked by an LLM relevance score (0-10)
+- **Source routing**: sources are chosen before retrieval based on query type
+
 ## Observability
 
 All LLM calls are traced via LangSmith. Each query produces a trace showing:
 - Query classification
+- Source routing decision (plan/news/publications)
 - Strategy selection (default vs. learned from data)
 - Retrieval results
+- Chunk reranking
 - Self-evaluation score
 - Generated answer
 
