@@ -154,7 +154,8 @@ Two indexes are created automatically by `ingest.py`:
 ├── requirements.txt
 ├── .env.example
 ├── static/
-│   └── index.html    # Frontend (single file)
+│   ├── index.html    # Frontend (single file)
+│   └── img/          # NHS England logo assets
 └── README.md
 ```
 
@@ -170,3 +171,30 @@ All LLM calls are traced via LangSmith. Each query produces a trace showing:
 - Generated answer
 
 View traces at [smith.langchain.com](https://smith.langchain.com) → `nhs-policy-navigator` project.
+
+---
+
+## Design reference
+
+Frontend styling follows the NHS England identity and data visualisation guidelines:
+
+- **NHS Identity Guidelines (colours, logo, typography):** [england.nhs.uk/nhsidentity](https://www.england.nhs.uk/nhsidentity/identity-guidelines/colours/)
+- **NHS England Data Viz Community of Practice:** [github.com/nhsengland/data-viz-community-of-practice](https://github.com/nhsengland/data-viz-community-of-practice)
+- **NHS digital service manual:** [service-manual.nhs.uk](https://service-manual.nhs.uk/design-system/styles/colour)
+
+NHS colour palette used:
+
+| Name | Hex |
+|---|---|
+| NHS Dark Blue | `#003087` |
+| NHS Blue | `#005EB8` |
+| NHS Mid Blue | `#0072CE` |
+| NHS Light Blue | `#41B6E6` |
+| NHS Aqua Blue | `#00A9CE` |
+| NHS Green | `#007f3b` |
+
+---
+
+## Licence
+
+MIT — see [LICENSE](./LICENSE).

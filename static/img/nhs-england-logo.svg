@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 80" width="140" height="80">
+  <!-- NHS blue badge -->
+  <rect x="0" y="0" width="88" height="52" rx="2" fill="#005EB8"/>
+  <!-- NHS text: white, bold, Frutiger/Arial -->
+  <text x="44" y="38"
+        font-family="'Frutiger', 'Arial', sans-serif"
+        font-size="34"
+        font-weight="bold"
+        fill="white"
+        text-anchor="middle"
+        dominant-baseline="auto">NHS</text>
+  <!-- England: white, below badge, lighter -->
+  <text x="4" y="72"
+        font-family="'Frutiger', 'Arial', sans-serif"
+        font-size="22"
+        font-weight="400"
+        fill="white"
+        text-anchor="start">England</text>
+</svg>
