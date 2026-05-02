@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NHS Policy Navigator — Adaptive Retrieval Agent</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0a0e1a;
+    color: #e0e6f0;
+    min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(135deg, #003087 0%, #005EB8 100%);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 3px solid #41B6E6;
+  }
+  .nhs-logo {
+    background: white;
+    color: #003087;
+    font-weight: 900;
+    font-size: 20px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+  }
+  header p {
+    font-size: 12px;
+    color: #93c5fd;
+    margin-top: 2px;
+  }
+  .badge {
+    margin-left: auto;
+    background: rgba(65,182,230,0.2);
+    border: 1px solid #41B6E6;
+    color: #41B6E6;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .layout { display: grid; grid-template-columns: 1fr 340px; gap: 0; height: calc(100vh - 73px); }
+
+  /* Left panel */
+  .main-panel { padding: 28px; overflow-y: auto; }
+
+  .search-box {
+    background: #111827;
+    border: 1px solid #1f2d45;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .search-box label {
+    font-size: 13px;
+    color: #93c5fd;
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .search-row { display: flex; gap: 10px; }
+  textarea {
+    flex: 1;
+    background: #0a0e1a;
+    border: 1px solid #1f2d45;
+    border-radius: 8px;
+    color: #e0e6f0;
+    padding: 12px 14px;
+    font-size: 15px;
+    resize: none;
+    height: 60px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { outline: none; border-color: #3b82f6; }
+  button.ask-btn {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0 22px;
+    font-size: 15px;
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  button.ask-btn:hover { opacity: 0.9; }
+  button.ask-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .example-queries {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .example-queries span {
+    font-size: 11px;
+    color: #6b7280;
+  }
+  .pill {
+    font-size: 11px;
+    background: #1f2d45;
+    color: #93c5fd;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .pill:hover { background: #2563eb; color: white; }
+
+  /* Result card */
+  .result-card {
+    background: #111827;
+    border: 1px solid #1f2d45;
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .result-card.show { display: block; }
+
+  .meta-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .tag-type { background: #1e3a5f; color: #60a5fa; }
+  .tag-strategy { background: #14532d; color: #4ade80; }
+  .tag-learned { background: #4c1d95; color: #c4b5fd; }
+  .tag-score { background: #3d2000; color: #fb923c; }
+
+  .answer-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #d1d5db;
+    white-space: pre-wrap;
+  }
+
+  .sources-title {
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 18px 0 10px;
+  }
+  .source-item {
+    background: #0a0e1a;
+    border: 1px solid #1f2d45;
+    border-left: 3px solid #2563eb;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #9ca3af;
+  }
+  .source-item .src-label {
+    color: #60a5fa;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .narrate-btn {
+    margin-top: 14px;
+    background: #1f2d45;
+    border: 1px solid #2563eb;
+    color: #60a5fa;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .narrate-btn:hover { background: #2563eb; color: white; }
+
+  /* Loading */
+  .loading {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    background: #111827;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #1f2d45;
+  }
+  .loading.show { display: flex; }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid #1f2d45;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-steps { font-size: 13px; color: #6b7280; }
+  .loading-step { transition: color 0.3s; }
+  .loading-step.active { color: #60a5fa; }
+  .loading-step.done { color: #4ade80; }
+
+  /* Right panel — stats */
+  .stats-panel {
+    background: #0d1220;
+    border-left: 1px solid #1f2d45;
+    padding: 22px 18px;
+    overflow-y: auto;
+  }
+  .stats-panel h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #6b7280;
+    margin-bottom: 16px;
+  }
+  .stat-section { margin-bottom: 24px; }
+  .stat-section h4 {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 10px;
+  }
+  .strategy-bar {
+    margin-bottom: 10px;
+  }
+  .strategy-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 4px;
+  }
+  .bar-bg {
+    background: #1f2d45;
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #2563eb, #06b6d4);
+    transition: width 0.6s ease;
+  }
+
+  .recent-query {
+    background: #111827;
+    border: 1px solid #1f2d45;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .recent-query .rq-text { color: #d1d5db; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recent-query .rq-meta { color: #6b7280; display: flex; gap: 6px; }
+  .rq-type { color: #60a5fa; }
+  .rq-score { color: #fb923c; }
+
+  .total-badge {
+    text-align: center;
+    padding: 12px;
+    background: #111827;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #1f2d45;
+  }
+  .total-badge .num { font-size: 28px; font-weight: 700; color: #3b82f6; }
+  .total-badge .lbl { font-size: 11px; color: #6b7280; }
+
+  .no-data { font-size: 12px; color: #4b5563; text-align: center; padding: 12px 0; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .stats-panel { border-left: none; border-top: 1px solid #1f2d45; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nhs-logo">NHS</div>
+  <div>
+    <h1>Policy Navigator</h1>
+    <p>Adaptive Retrieval Agent — NHS 10 Year Health Plan 2025</p>
+  </div>
+  <div class="badge">⚡ MongoDB Atlas Vector + Text Search</div>
+</header>
+
+<div class="layout">
+
+  <!-- Main -->
+  <div class="main-panel">
+    <div class="search-box">
+      <label>Ask anything about the NHS 10 Year Health Plan</label>
+      <div class="search-row">
+        <textarea id="queryInput" placeholder="e.g. What are the NHS targets for GP access by 2028?"></textarea>
+        <button class="ask-btn" id="askBtn" onclick="ask()">Ask →</button>
+      </div>
+      <div class="example-queries">
+        <span>Try:</span>
+        <div class="pill" onclick="setQuery('What are the 3 radical shifts in the NHS plan?')">3 radical shifts</div>
+        <div class="pill" onclick="setQuery('What does the plan say about AI in the NHS?')">AI strategy</div>
+        <div class="pill" onclick="setQuery('How does hospital care compare to community care in the plan?')">Hospital vs community</div>
+        <div class="pill" onclick="setQuery('What does the plan say about health inequalities in deprived areas?')">Health inequalities</div>
+        <div class="pill" onclick="setQuery('Does the plan address mental health in prisons?')">Gap: prison mental health</div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div class="loading-steps">
+        <div class="loading-step" id="step1">🔍 Classifying query type...</div>
+        <div class="loading-step" id="step2">📊 Selecting retrieval strategy...</div>
+        <div class="loading-step" id="step3">🧠 Searching MongoDB Atlas...</div>
+        <div class="loading-step" id="step4">✍️ Generating answer...</div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card" id="resultCard">
+      <div class="meta-row" id="metaRow"></div>
+      <div class="answer-text" id="answerText"></div>
+      <div class="sources-title">Sources from NHS Plan</div>
+      <div id="sourcesList"></div>
+      <button class="narrate-btn" id="narrateBtn" onclick="narrate()" style="display:none">🔊 Listen to answer</button>
+    </div>
+  </div>
+
+  <!-- Stats sidebar -->
+  <div class="stats-panel">
+    <h3>Live Performance Data</h3>
+
+    <div class="total-badge">
+      <div class="num" id="totalCount">—</div>
+      <div class="lbl">Queries Processed</div>
+    </div>
+
+    <div class="stat-section">
+      <h4>Strategy Performance (avg relevance score)</h4>
+      <div id="strategyBars"><div class="no-data">No data yet</div></div>
+    </div>
+
+    <div class="stat-section">
+      <h4>Query Type Distribution</h4>
+      <div id="typeBars"><div class="no-data">No data yet</div></div>
+    </div>
+
+    <div class="stat-section">
+      <h4>Recent Queries</h4>
+      <div id="recentQueries"><div class="no-data">Ask something to get started</div></div>
+    </div>
+  </div>
+
+</div>
+
+<audio id="audioPlayer" style="display:none"></audio>
+
+<script>
+  let currentAnswer = "";
+
+  function setQuery(text) {
+    document.getElementById("queryInput").value = text;
+    document.getElementById("queryInput").focus();
+  }
+
+  async function ask() {
+    const query = document.getElementById("queryInput").value.trim();
+    if (!query) return;
+
+    const btn = document.getElementById("askBtn");
+    btn.disabled = true;
+    document.getElementById("loading").classList.add("show");
+    document.getElementById("resultCard").classList.remove("show");
+
+    // Animate loading steps
+    const steps = ["step1","step2","step3","step4"];
+    steps.forEach(s => {
+      const el = document.getElementById(s);
+      el.classList.remove("active","done");
+    });
+    let stepIdx = 0;
+    const stepInterval = setInterval(() => {
+      if (stepIdx > 0) document.getElementById(steps[stepIdx-1]).classList.replace("active","done");
+      if (stepIdx < steps.length) {
+        document.getElementById(steps[stepIdx]).classList.add("active");
+        stepIdx++;
+      }
+    }, 800);
+
+    try {
+      const res = await fetch("/api/query", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({query})
+      });
+      clearInterval(stepInterval);
+      steps.forEach(s => document.getElementById(s).classList.replace("active","done"));
+
+      if (!res.ok) throw new Error("Server error");
+      const data = await res.json();
+      currentAnswer = data.answer;
+      renderResult(data);
+      await loadStats();
+    } catch(e) {
+      clearInterval(stepInterval);
+      alert("Error: " + e.message);
+    } finally {
+      document.getElementById("loading").classList.remove("show");
+      btn.disabled = false;
+    }
+  }
+
+  function renderResult(data) {
+    const card = document.getElementById("resultCard");
+    card.classList.add("show");
+
+    // Meta tags
+    const strategyLabels = {
+      "text_search": "Text Search",
+      "vector_search": "Vector Search",
+      "hybrid_search": "Hybrid Search"
+    };
+    const typeLabels = {
+      "factual": "🎯 Factual",
+      "conceptual": "💡 Conceptual",
+      "comparative": "⚖️ Comparative",
+      "gap_analysis": "🔍 Gap Analysis"
+    };
+
+    let meta = `
+      <span class="tag tag-type">${typeLabels[data.query_type] || data.query_type}</span>
+      <span class="tag tag-strategy">⚡ ${strategyLabels[data.strategy] || data.strategy}</span>`;
+    if (data.strategy_source === "learned") {
+      meta += `<span class="tag tag-learned">🧠 Learned from data</span>`;
+    }
+    meta += `<span class="tag tag-score">Score: ${data.relevance_score.toFixed(1)}/5</span>`;
+    document.getElementById("metaRow").innerHTML = meta;
+
+    // Answer
+    document.getElementById("answerText").textContent = data.answer;
+
+    // Sources
+    const srcHtml = (data.sources || []).map(s => `
+      <div class="source-item">
+        <div class="src-label">${s.source} — Page ${s.page}</div>
+        <div>${s.text}</div>
+      </div>`).join("");
+    document.getElementById("sourcesList").innerHTML = srcHtml || "<div class='no-data'>No sources</div>";
+
+    // ElevenLabs button
+    document.getElementById("narrateBtn").style.display = "block";
+  }
+
+  async function narrate() {
+    const btn = document.getElementById("narrateBtn");
+    btn.textContent = "⏳ Generating audio...";
+    btn.disabled = true;
+    try {
+      const res = await fetch("/api/narrate", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({query: currentAnswer})
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = document.getElementById("audioPlayer");
+        audio.src = url;
+        audio.play();
+        btn.textContent = "🔊 Playing...";
+        audio.onended = () => { btn.textContent = "🔊 Listen again"; btn.disabled = false; };
+      } else {
+        const err = await res.json().catch(() => ({detail: `HTTP ${res.status}`}));
+        btn.textContent = `🔊 Error: ${err.detail || res.status}`;
+        btn.disabled = false;
+        console.error("ElevenLabs error:", err);
+      }
+    } catch(e) {
+      btn.textContent = `🔊 Error: ${e.message}`;
+      btn.disabled = false;
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const res = await fetch("/api/stats");
+      const data = await res.json();
+
+      document.getElementById("totalCount").textContent = data.total_queries;
+
+      // Strategy bars
+      const maxScore = 5;
+      const strategyHtml = (data.strategy_performance || []).map(s => `
+        <div class="strategy-bar">
+          <div class="strategy-label">
+            <span>${s._id.replace("_"," ")}</span>
+            <span>${s.avg_score.toFixed(2)}/5 (${s.count} queries)</span>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill" style="width:${(s.avg_score/maxScore)*100}%"></div>
+          </div>
+        </div>`).join("");
+      document.getElementById("strategyBars").innerHTML = strategyHtml || "<div class='no-data'>No data yet</div>";
+
+      // Type bars
+      const maxCount = Math.max(...(data.type_performance||[]).map(t=>t.count),1);
+      const typeHtml = (data.type_performance || []).map(t => `
+        <div class="strategy-bar">
+          <div class="strategy-label">
+            <span>${t._id}</span>
+            <span>${t.count} queries</span>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill" style="width:${(t.count/maxCount)*100}%; background: linear-gradient(90deg,#7c3aed,#a855f7)"></div>
+          </div>
+        </div>`).join("");
+      document.getElementById("typeBars").innerHTML = typeHtml || "<div class='no-data'>No data yet</div>";
+
+      // Recent queries
+      const recentHtml = (data.recent_queries || []).map(q => `
+        <div class="recent-query">
+          <div class="rq-text">${q.query}</div>
+          <div class="rq-meta">
+            <span class="rq-type">${q.query_type}</span>
+            <span>→ ${q.strategy}</span>
+            <span class="rq-score">★${q.relevance_score?.toFixed(1)}</span>
+            ${q.strategy_source === "learned" ? "<span style='color:#c4b5fd'>🧠 learned</span>" : ""}
+          </div>
+        </div>`).join("");
+      document.getElementById("recentQueries").innerHTML = recentHtml || "<div class='no-data'>No queries yet</div>";
+
+    } catch(e) {
+      console.log("Stats error:", e);
+    }
+  }
+
+  // Enter to submit
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("queryInput").addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); }
+    });
+    loadStats();
+    setInterval(loadStats, 10000); // refresh stats every 10s
+  });
+</script>
+</body>
+</html>
