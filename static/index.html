@@ -238,6 +238,7 @@
   .tag-score   { background: #f0f4f5; color: #4c6272; border-color: #d8dde0; }
   .tag-plan    { background: #e5f0f8; color: #005EB8; border-color: #adc3e8; }
   .tag-news    { background: #e8f5e9; color: #00401a; border-color: #81c784; }
+  .tag-pub     { background: #fff3e0; color: #7c4600; border-color: #ffb74d; }
 
   /* ── Live news panel ── */
   .news-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e8edee; }
@@ -281,6 +282,16 @@
   .news-item-title a:hover { text-decoration: underline; }
   .news-item-desc { color: #4c6272; margin-bottom: 5px; line-height: 1.5; }
   .news-item-date { font-size: 11px; color: #768692; }
+
+  /* -- Publications panel -- */
+  .pub-section { margin-top: 16px; padding-top: 14px; border-top: 1px solid #e8edee; }
+  .pub-section-title { font-size: 12px; color: #4c6272; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; margin-bottom: 10px; }
+  .pub-item { background: #fff8f0; border-left: 3px solid #ffb74d; border-radius: 0 3px 3px 0; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; }
+  .pub-item-title { font-weight: 600; color: #212b32; margin-bottom: 4px; }
+  .pub-item-title a { color: #005EB8; text-decoration: none; }
+  .pub-item-title a:hover { text-decoration: underline; }
+  .pub-item-desc { color: #4c6272; margin-bottom: 5px; line-height: 1.5; }
+  .pub-item-date { font-size: 11px; color: #768692; }
 
   .answer-text {
     font-size: 15px;
@@ -484,6 +495,10 @@
       <div class="answer-text" id="answerText"></div>
       <div class="sources-title">Sources from NHS 10 Year Health Plan</div>
       <div id="sourcesList"></div>
+      <div id="pubSection" class="pub-section" style="display:none">
+        <div class="pub-section-title">&#128218; NHS Publications (post July 2025)</div>
+        <div id="pubList"></div>
+      </div>
       <div id="newsSection" class="news-section" style="display:none">
         <div class="news-section-title">
           <span class="news-live-dot"></span>
@@ -603,6 +618,7 @@
     let meta = `<span class="tag tag-type">${typeLabel[data.query_type] || data.query_type}</span>`;
     if (sources.includes("plan")) meta += `<span class="tag tag-plan">&#128196; NHS Plan</span>`;
     if (sources.includes("news")) meta += `<span class="tag tag-news">&#128240; Live News</span>`;
+    if (sources.includes("publications")) meta += `<span class="tag tag-pub">&#128218; Publications</span>`;
     meta += `<span class="tag ${stratClass[data.strategy] || 'tag-vector'}">${stratLabel[data.strategy] || data.strategy}</span>`;
     if (data.strategy_source === "learned") {
       meta += `<span class="tag tag-learned">&#129504; Learned</span>`;
@@ -619,6 +635,20 @@
         <div>${s.text}</div>
       </div>`).join("");
     document.getElementById("sourcesList").innerHTML = srcHtml || "<div class='no-data'>No sources</div>";
+
+    // Publications panel
+    const pubItems = data.pub_items || [];
+    if (pubItems.length > 0) {
+      document.getElementById("pubSection").style.display = "block";
+      document.getElementById("pubList").innerHTML = pubItems.map(p => `
+        <div class="pub-item">
+          <div class="pub-item-title"><a href="${p.link}" target="_blank">${p.title}</a></div>
+          ${p.description ? `<div class="pub-item-desc">${p.description.replace(/<[^>]+>/g,"").slice(0,220)}...</div>` : ""}
+          <div class="pub-item-date">Published: ${p.pub_date ? p.pub_date.slice(0,16) : ""}</div>
+        </div>`).join("");
+    } else {
+      document.getElementById("pubSection").style.display = "none";
+    }
 
     // Live news panel
     const newsItems = data.news_items || [];
@@ -655,65 +685,4 @@
         const audio = document.getElementById("audioPlayer");
         audio.src = url;
         audio.play();
-        btn.textContent = "▶ Playing...";
-        audio.onended = () => { btn.textContent = "▶ Listen again"; btn.disabled = false; };
-      } else {
-        const err = await res.json().catch(() => ({detail: `HTTP ${res.status}`}));
-        btn.textContent = `Error: ${err.detail || res.status}`;
-        btn.disabled = false;
-      }
-    } catch(e) {
-      btn.textContent = `Error: ${e.message}`;
-      btn.disabled = false;
-    }
-  }
-
-  async function loadStats() {
-    try {
-      const res = await fetch("/api/stats");
-      const data = await res.json();
-
-      document.getElementById("totalCount").textContent = data.total_queries;
-
-      const maxScore = 5;
-      document.getElementById("strategyBars").innerHTML = (data.strategy_performance || []).map(s => `
-        <div class="strategy-bar">
-          <div class="strategy-label">
-            <span>${s._id.replace(/_/g," ")}</span>
-            <span>${s.avg_score.toFixed(2)}/5 &middot; ${s.count}</span>
-          </div>
-          <div class="bar-bg"><div class="bar-fill" style="width:${(s.avg_score/maxScore)*100}%"></div></div>
-        </div>`).join("") || "<div class='no-data'>No data yet</div>";
-
-      const maxCount = Math.max(...(data.type_performance||[]).map(t=>t.count),1);
-      document.getElementById("typeBars").innerHTML = (data.type_performance || []).map(t => `
-        <div class="strategy-bar">
-          <div class="strategy-label">
-            <span>${t._id}</span><span>${t.count}</span>
-          </div>
-          <div class="bar-bg"><div class="bar-fill" style="width:${(t.count/maxCount)*100}%; background:#007f3b"></div></div>
-        </div>`).join("") || "<div class='no-data'>No data yet</div>";
-
-      document.getElementById("recentQueries").innerHTML = (data.recent_queries || []).map(q => `
-        <div class="recent-item">
-          <div class="rq-text">${q.query}</div>
-          <div class="rq-meta">
-            <span class="rq-type">${q.query_type}</span>
-            <span>&rarr; ${(q.strategy||'').replace(/_/g,' ')}</span>
-            <span class="rq-score">&#9733; ${(q.relevance_score||0).toFixed(1)}</span>
-            ${q.strategy_source==='learned'?'<span class="rq-learned">learned</span>':''}
-          </div>
-        </div>`).join("") || "<div class='no-data'>No queries yet</div>";
-    } catch(e) { console.log("Stats error:", e); }
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("queryInput").addEventListener("keydown", e => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); }
-    });
-    loadStats();
-    setInterval(loadStats, 10000);
-  });
-</script>
-</body>
-</html>
+        btn.textContent

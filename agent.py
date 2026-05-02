@@ -44,9 +44,17 @@ def classify_query(query: str, openai_client: OpenAI) -> str:
 
 
 def select_sources(query_type: str) -> list:
-    """Route queries to sources. factual -> plan only. Others -> plan + live news."""
+    """
+    Route queries to sources based on query type.
+    - factual     -> plan only (precise targets live in the document)
+    - conceptual  -> plan + news (recent announcements add context)
+    - comparative -> plan + news (plan intent vs current reality)
+    - gap_analysis-> plan + news + publications (check if a post-July-2025 pub fills the gap)
+    """
     if query_type == "factual":
         return ["plan"]
+    if query_type == "gap_analysis":
+        return ["plan", "news", "publications"]
     return ["plan", "news"]
 
 
@@ -168,13 +176,15 @@ def rerank_chunks(query: str, chunks: list, openai_client: OpenAI) -> list:
 
 
 @traceable(name="generate_answer")
-def generate_answer(query: str, query_type: str, chunks: list, openai_client: OpenAI, news_items: list = None) -> str:
+def generate_answer(query: str, query_type: str, chunks: list, openai_client: OpenAI, news_items: list = None, pub_items: list = None) -> str:
     """Generate grounded answer from plan chunks + optional live news."""
     if news_items is None:
         news_items = []
+    if pub_items is None:
+        pub_items = []
 
-    if not chunks and not news_items:
-        return "No relevant content found in the NHS 10 Year Health Plan or recent NHS news for this query. This may represent a genuine gap."
+    if not chunks and not news_items and not pub_items:
+        return "No relevant content found in the NHS 10 Year Health Plan, recent news, or related publications for this query. This may represent a genuine gap."
 
     plan_context = "\n\n".join([
         f"[NHS Plan -- {c.get('source','').replace('_',' ').title()}, p.{c.get('page','?')}]: {c.get('text','')}"
@@ -188,6 +198,13 @@ def generate_answer(query: str, query_type: str, chunks: list, openai_client: Op
             for n in news_items
         ])
 
+    pub_context = ""
+    if pub_items:
+        pub_context = "\n\nRELATED NHS PUBLICATIONS (post July 2025):\n" + "\n".join([
+            f"[{p['pub_date'][:16]}] {p['title']}: {p['description'][:300]}"
+            for p in pub_items
+        ])
+
     type_instructions = {
         "factual":      "Give a direct, precise answer in 2-3 sentences. Lead with the specific fact, figure or target.",
         "conceptual":   "Write a crisp executive-summary paragraph (4-5 sentences). State the core idea, mechanism, and one key milestone.",
@@ -196,8 +213,11 @@ def generate_answer(query: str, query_type: str, chunks: list, openai_client: Op
     }
 
     multi_source = ""
-    if news_items:
-        multi_source = " Where relevant, note whether the plan's stated intention matches recent NHS announcements. Distinguish: cite plan pages as (p.X) and news as (NHS News, date)."
+    if news_items or pub_items:
+        parts = []
+        if news_items: parts.append("recent NHS news (cite as: NHS News, date)")
+        if pub_items: parts.append("post-July-2025 NHS publications (cite as: NHS Publication, title)")
+        multi_source = " Cross-reference plan text with " + " and ".join(parts) + ". Distinguish sources clearly."
 
     response = openai_client.chat.completions.create(
         model="gpt-4o-mini",
@@ -210,7 +230,7 @@ def generate_answer(query: str, query_type: str, chunks: list, openai_client: Op
                     "Rules: cite plan page numbers inline e.g. (p.24), include year targets, max 180 words."
                 )
             },
-            {"role": "user", "content": f"Query: {query}\n\nContext from NHS 10 Year Health Plan:\n{plan_context}{news_context}"}
+            {"role": "user", "content": f"Query: {query}\n\nContext from NHS 10 Year Health Plan:\n{plan_context}{news_context}{pub_context}"}
         ],
         max_tokens=300
     )
@@ -279,13 +299,17 @@ def adaptive_retrieve(query: str, chunks_col: Collection, log_col: Collection, o
     # 5. Re-rank plan chunks
     chunks = rerank_chunks(query, chunks, openai_client)
 
-    # 6. Fetch live NHS news
+    # 6. Fetch live NHS news and post-plan publications
     news_items = []
     if "news" in sources:
         news_items = fetch_nhs_news(query, openai_client)
 
+    pub_items = []
+    if "publications" in sources:
+        pub_items = fetch_nhs_publications(query, openai_client)
+
     # 7. Generate answer
-    answer = generate_answer(query, query_type, chunks, openai_client, news_items)
+    answer = generate_answer(query, query_type, chunks, openai_client, news_items, pub_items)
 
     # 8. Evaluate
     score = evaluate_relevance(query, chunks, openai_client)
@@ -294,7 +318,7 @@ def adaptive_retrieve(query: str, chunks_col: Collection, log_col: Collection, o
     log_col.insert_one({
         "query": query, "query_type": query_type,
         "strategy": strategy, "strategy_source": strategy_source,
-        "sources_queried": sources, "news_fetched": len(news_items),
+        "sources_queried": sources, "news_fetched": len(news_items), "pubs_fetched": len(pub_items),
         "relevance_score": score, "chunk_count": len(chunks),
         "timestamp": datetime.utcnow()
     })
@@ -309,5 +333,107 @@ def adaptive_retrieve(query: str, chunks_col: Collection, log_col: Collection, o
              "page": c.get("page","?"), "score": round(c.get("rerank_score", 5.0), 1)}
             for c in chunks[:4]
         ],
-        "news_items": news_items, "relevance_score": score, "strategy_history": history
+        "news_items": news_items, "pub_items": pub_items, "relevance_score": score, "strategy_history": history
     }
+
+
+# -- NHS Publications (post July 2025) ----------------------------------------
+
+# Curated seed: key Fit for the Future implementation publications
+# These won't appear in the rolling RSS window but are directly relevant
+PUBLICATION_SEEDS = [
+    {
+        "title": "Fit for the future: towards population health delivery models",
+        "link": "https://www.england.nhs.uk/publication/fit-for-the-future-towards-population-health-delivery-models/",
+        "description": "Sets out how population-based delivery models introduced in the 10 Year Health Plan can be used by integrated care boards and providers to improve outcomes and reduce inequalities.",
+        "pub_date": "17 Mar 2026",
+        "source_type": "nhs_publication"
+    },
+    {
+        "title": "Fit for the Future: 10 Year Health Plan for England - open letter to staff",
+        "link": "https://www.england.nhs.uk/publication/fit-for-the-future-10-year-health-plan-for-england-open-letter-to-staff/",
+        "description": "Open letter from NHS England chief executive to all NHS staff setting out what the 10 Year Health Plan means for the workforce and frontline delivery.",
+        "pub_date": "3 Jul 2025",
+        "source_type": "nhs_publication"
+    },
+    {
+        "title": "Change NHS: help build a health service fit for the future",
+        "link": "https://www.england.nhs.uk/publication/change-nhs-help-build-a-health-service-fit-for-the-future/",
+        "description": "Summary of the public engagement process that shaped the 10 Year Health Plan, including responses on prevention, primary care, mental health and digital transformation.",
+        "pub_date": "3 Jul 2025",
+        "source_type": "nhs_publication"
+    },
+]
+
+PLAN_CUTOFF = "2025-07-03"
+
+
+@traceable(name="fetch_nhs_publications")
+def fetch_nhs_publications(query: str, openai_client: OpenAI) -> list:
+    """
+    Fetch NHS England publications published after the 10 Year Health Plan (3 July 2025).
+    Sources: (1) live RSS feed filtered to /publication/ URLs post cutoff,
+             (2) curated seed list of known implementation documents.
+    Ranks top 3 by query relevance using GPT-4o-mini.
+    """
+    from email.utils import parsedate_to_datetime
+
+    live_pubs = []
+    try:
+        r = httpx.get(
+            "https://www.england.nhs.uk/feed/",
+            timeout=10.0,
+            follow_redirects=True,
+            headers={"User-Agent": "NHS-Policy-Navigator/1.0"}
+        )
+        r.raise_for_status()
+        root = ET.fromstring(r.text)
+        for item in root.findall(".//item"):
+            link = (item.findtext("link") or "").strip()
+            if "/publication/" not in link:
+                continue
+            date_str = (item.findtext("pubDate") or "").strip()
+            try:
+                pub_dt = parsedate_to_datetime(date_str)
+                if pub_dt.date().isoformat() < PLAN_CUTOFF:
+                    continue
+            except Exception:
+                pass  # include if date unparseable
+            title = (item.findtext("title") or "").strip()
+            desc  = (item.findtext("description") or "").strip()
+            if title and link:
+                live_pubs.append({
+                    "title": title, "link": link,
+                    "description": desc[:400], "pub_date": date_str,
+                    "source_type": "nhs_publication"
+                })
+    except Exception as e:
+        print(f"[publications fetch error] {e}")
+
+    # Merge live + seeds, deduplicate by link
+    seen_links = {p["link"] for p in live_pubs}
+    all_pubs = live_pubs + [s for s in PUBLICATION_SEEDS if s["link"] not in seen_links]
+
+    if not all_pubs:
+        return []
+
+    # Rank by relevance
+    numbered = "\n".join(
+        f"{i+1}. {p['title']}: {p['description'][:150]}"
+        for i, p in enumerate(all_pubs)
+    )
+    try:
+        resp = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Rank NHS publications for relevance to the query. Return ONLY top-3 item numbers comma-separated e.g. 1,3,2"},
+                {"role": "user", "content": f"Query: {query}\n\nPublications:\n{numbered}"}
+            ],
+            max_tokens=20
+        )
+        raw = resp.choices[0].message.content.strip()
+        indices = [int(x.strip()) - 1 for x in raw.split(",") if x.strip().isdigit()]
+        return [all_pubs[i] for i in indices if 0 <= i < len(all_pubs)][:3]
+    except Exception as e:
+        print(f"[publications rank error] {e}")
+        return all_pubs[:3]
