@@ -9,6 +9,8 @@
 
 NHS Policy Navigator is an adaptive retrieval agent over the **NHS 10 Year Health Plan "Fit for the Future" (July 2025)** plus live NHS England updates. It doesn't just do RAG — it reasons about *how* to retrieve and *which sources* to use before it retrieves.
 
+![Initial draft wireframe](https://github.com/chaeyoonyunakim/nhs-policy-navigator/blob/main/img/initial-draft.png)
+
 For every query, the agent:
 
 1. **Classifies** the question into one of four types: `factual`, `conceptual`, `comparative`, or `gap_analysis`
@@ -208,6 +210,8 @@ Frontend styling follows the NHS England identity and data visualisation guideli
 - **NHS Identity Guidelines (colours, logo, typography):** [england.nhs.uk/nhsidentity](https://www.england.nhs.uk/nhsidentity/identity-guidelines/colours/)
 - **NHS England Data Viz Community of Practice:** [github.com/nhsengland/data-viz-community-of-practice](https://github.com/nhsengland/data-viz-community-of-practice)
 - **NHS digital service manual:** [service-manual.nhs.uk](https://service-manual.nhs.uk/design-system/styles/colour)
+
+![PoC design reference](https://github.com/chaeyoonyunakim/nhs-policy-navigator/blob/main/img/poc-design.png)
 
 NHS colour palette used:
 
