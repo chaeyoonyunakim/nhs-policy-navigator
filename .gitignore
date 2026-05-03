@@ -3,4 +3,5 @@ __pycache__/
 *.pyc
 .DS_Store
 *.pdf
-*.png
+initial-draft.png
+mongodb-setup.png
