@@ -3,7 +3,6 @@ NHS Policy Navigator -- FastAPI backend
 Run with: uvicorn app:app --reload
 """
 import os
-import google.generativeai as genai
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -14,8 +13,6 @@ from agent import adaptive_retrieve
 
 load_dotenv()
 
-genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-
 mongo = MongoClient(os.environ["MONGODB_URI"])
 db = mongo[os.environ.get("DB_NAME", "agentic-evolution-hackathon")]
 chunks_col = db["nhs_chunks"]
@@ -23,6 +20,7 @@ log_col = db["query_log"]
 
 ELEVENLABS_KEY = os.environ.get("ELEVENLABS_API_KEY", "").strip()
 print(f"[startup] ElevenLabs key loaded: {'YES (' + ELEVENLABS_KEY[:8] + '...)' if ELEVENLABS_KEY else 'NO'}")
+print(f"[startup] Google API key loaded: {'YES' if os.environ.get('GOOGLE_API_KEY') else 'NO'}")
 
 app = FastAPI(title="NHS Policy Navigator")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -36,12 +34,7 @@ class QueryRequest(BaseModel):
 async def query_endpoint(request: QueryRequest):
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
-    result = adaptive_retrieve(
-        query=request.query,
-        chunks_col=chunks_col,
-        log_col=log_col
-    )
-    return result
+    return adaptive_retrieve(query=request.query, chunks_col=chunks_col, log_col=log_col)
 
 
 @app.get("/api/stats")
@@ -59,12 +52,8 @@ async def stats_endpoint():
                           "relevance_score": 1, "strategy_source": 1, "_id": 0})
         .sort("timestamp", -1).limit(8)
     )
-    return {
-        "total_queries": log_col.count_documents({}),
-        "strategy_performance": strategy_perf,
-        "type_performance": type_perf,
-        "recent_queries": recent
-    }
+    return {"total_queries": log_col.count_documents({}), "strategy_performance": strategy_perf,
+            "type_performance": type_perf, "recent_queries": recent}
 
 
 @app.post("/api/narrate")

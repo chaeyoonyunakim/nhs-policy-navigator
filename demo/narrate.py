@@ -15,7 +15,7 @@ script = (
     "That is the problem this agent solves. "
 
     "At its core, the system uses MongoDB Atlas as the retrieval backbone. "
-    "586 chunks of the NHS plan are embedded using OpenAI and stored with both vector and full-text indexes. "
+    "586 chunks of the NHS plan are embedded using Google Gemini and stored with both vector and full-text indexes. "
     "This gives us the flexibility to choose the right search strategy for each question. "
 
     "The first thing the agent does with every query is classify it. "
@@ -30,7 +30,7 @@ script = (
     "This is the source routing layer. The agent decides where to look before it looks. "
 
     "Retrieved plan chunks are then re-ranked by an LLM. "
-    "GPT-4o-mini scores each chunk against the original query from zero to ten, "
+    "Gemini scores each chunk against the original query from zero to ten, "
     "and only the most relevant chunks make it into the final answer. "
     "This cuts noise and keeps responses grounded. "
 
