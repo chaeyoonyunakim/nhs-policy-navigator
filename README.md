@@ -1,6 +1,9 @@
+[![status: experimental](https://github.com/GIScience/badges/raw/master/status/experimental.svg)](https://github.com/GIScience/badges#experimental)
+
+
 # NHS Policy Navigator — Adaptive Multi-Source Retrieval Agent
 
-> Built for the **MongoDB Agentic Evolution Hackathon** (London, May 2025)  
+> PoC built for the **MongoDB Agentic Evolution Hackathon** (London, May 2025)  
 > Theme: **Adaptive Retrieval** — an agentic system that actively modifies its query approach based on input and learns from past performance.
 
 ---
@@ -69,21 +72,31 @@ fit-for-the-future-10-year-health-plan-for-england-executive-summary.pdf
 
 ## Setup
 
-### 1. Clone and install
+You need Python 3.10+ and a free [Google AI Studio API key](https://aistudio.google.com/apikey).
+
+### 1. Clone and create a virtual environment
 
 ```bash
 git clone https://github.com/chaeyoonyunakim/nhs-policy-navigator.git
 cd nhs-policy-navigator
+
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+```
+
+### 2. Install dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configure environment
-
-Copy `.env.example` to `.env` and fill in your credentials:
+### 3. Configure environment
 
 ```bash
 cp .env.example .env
 ```
+
+Open `.env` and fill in your credentials:
 
 ```env
 MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
@@ -95,13 +108,14 @@ LANGCHAIN_PROJECT=nhs-policy-navigator
 LANGCHAIN_API_KEY=lsv2_...
 ```
 
-`GOOGLE_API_KEY` is a free-tier Google AI Studio key — no billing required. Obtain one at [aistudio.google.com](https://aistudio.google.com/apikey).
+`GOOGLE_API_KEY` is free — no billing required. Obtain one at [aistudio.google.com](https://aistudio.google.com/apikey).  
+`ELEVENLABS_API_KEY` and `LANGCHAIN_API_KEY` are optional (voice narration and tracing respectively).
 
-### 3. Download PDFs
+### 4. Download PDFs
 
 Download both PDFs from [https://www.england.nhs.uk/long-term-plan/](https://www.england.nhs.uk/long-term-plan/) and place them in the project root (see filenames above).
 
-### 4. Restore the MongoDB data from the dump (recommended)
+### 5. Restore the MongoDB data from the dump (recommended)
 
 The repository includes a pre-built dump of all 586 embedded chunks (using `gemini-embedding-001`, 768 dims). This is the fastest way to get started — no PDF ingestion or embedding calls needed:
 
@@ -124,7 +138,7 @@ Wait for both indexes to show **READY** in Atlas UI → Cluster → Search Index
 
 Note: live news and publication sources are fetched at query time and do not require ingestion.
 
-### 5. Run the app
+### 6. Run the app
 
 ```bash
 python -m uvicorn app:app --reload
