@@ -1,5 +1,5 @@
 """
-Ingest NHS PDFs into MongoDB Atlas.
+Ingest NHS PDFs into MongoDB Atlas using Gemini embeddings.
 Run this ONCE before starting the app.
 
 Usage:
@@ -11,18 +11,17 @@ After running, go to MongoDB Atlas UI and create the two search indexes
 """
 import os
 import sys
+import time
+import pypdf
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.operations import SearchIndexModel
-from openai import OpenAI
-import pypdf
-import time
+from gemini import embed
 
 load_dotenv()
 
 MONGO_URI = os.environ["MONGODB_URI"]
-OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-DB_NAME = os.environ.get("DB_NAME", "nhs_hackathon")
+DB_NAME = os.environ.get("DB_NAME", "agentic-evolution-hackathon")
 COLLECTION = "nhs_chunks"
 
 PDFS = [
@@ -30,7 +29,8 @@ PDFS = [
     ("fit-for-the-future-10-year-health-plan-for-england.pdf", "full_plan"),
 ]
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def chunk_text(text: str, max_words: int = 180, overlap: int = 30) -> list[str]:
     """Split text into overlapping chunks of ~180 words."""
@@ -38,18 +38,10 @@ def chunk_text(text: str, max_words: int = 180, overlap: int = 30) -> list[str]:
     chunks, i = [], 0
     while i < len(words):
         chunk = " ".join(words[i: i + max_words])
-        if len(chunk.strip()) > 80:   # skip tiny fragments
+        if len(chunk.strip()) > 80:
             chunks.append(chunk.strip())
         i += max_words - overlap
     return chunks
-
-
-def get_embedding(text: str, client: OpenAI) -> list:
-    response = client.embeddings.create(
-        input=text[:8000],
-        model="text-embedding-3-small"
-    )
-    return response.data[0].embedding
 
 
 def extract_pages(pdf_path: str) -> list[dict]:
@@ -62,17 +54,15 @@ def extract_pages(pdf_path: str) -> list[dict]:
     return pages
 
 
-# ── Main ─────────────────────────────────────────────────────────────────────
+# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     mongo = MongoClient(MONGO_URI)
     db = mongo[DB_NAME]
     col = db[COLLECTION]
 
-    print(f"Connected to MongoDB. Clearing existing chunks...")
+    print(f"Connected to MongoDB ({DB_NAME}). Clearing existing chunks...")
     col.delete_many({})
-
-    openai = OpenAI(api_key=OPENAI_API_KEY)
 
     total_chunks = 0
     for pdf_file, source_name in PDFS:
@@ -88,7 +78,7 @@ def main():
         for page_data in pages:
             chunks = chunk_text(page_data["text"])
             for j, chunk in enumerate(chunks):
-                embedding = get_embedding(chunk, openai)
+                embedding = embed(chunk)
                 documents.append({
                     "text": chunk,
                     "embedding": embedding,
@@ -110,7 +100,6 @@ def main():
     print("Creating search indexes (this may take 1-2 minutes)...")
 
     try:
-        # Drop existing indexes first (ignore errors if they don't exist)
         try:
             col.drop_search_index("vector_index")
             col.drop_search_index("text_index")
@@ -123,7 +112,7 @@ def main():
                 "fields": [{
                     "type": "vector",
                     "path": "embedding",
-                    "numDimensions": 1536,
+                    "numDimensions": 768,
                     "similarity": "cosine"
                 }]
             },
@@ -157,7 +146,7 @@ def main():
      "fields": [{
        "type": "vector",
        "path": "embedding",
-       "numDimensions": 1536,
+       "numDimensions": 768,
        "similarity": "cosine"
      }]
    }
@@ -175,7 +164,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # Quick check
     uri = os.environ.get("MONGODB_URI", "")
     if "YOUR_PASSWORD" in uri or "XXXXX" in uri:
         print("❌ Update MONGODB_URI in your .env file first!")
