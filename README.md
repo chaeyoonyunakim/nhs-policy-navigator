@@ -132,7 +132,7 @@ Then create both Atlas Search indexes manually in the Atlas UI (see [MongoDB Atl
 python ingest.py
 ```
 
-This chunks both PDFs, generates Gemini embeddings, and loads them into MongoDB Atlas. Takes ~5–10 minutes. Then run `reembed.py` only if you need to re-embed existing documents.
+This chunks both PDFs, generates `gemini-embedding-001` embeddings (768 dims), loads all chunks into MongoDB Atlas, and creates both search indexes automatically. Takes ~5–10 minutes.
 
 Wait for both indexes to show **READY** in Atlas UI → Cluster → Search Indexes before running the app.
 
@@ -200,7 +200,7 @@ For `conceptual`, `comparative`, and `gap_analysis`, results may include:
 ├── app.py            # FastAPI backend (query, stats, narrate endpoints)
 ├── gemini.py         # Gemini REST API wrapper (embed + generate, no SDK)
 ├── ingest.py         # PDF ingestion + MongoDB index creation
-├── reembed.py        # One-shot re-embedding utility (OpenAI → Gemini migration)
+├── reembed.py        # One-shot utility: re-embed existing docs (e.g. after model change)
 ├── export_db.py      # Export MongoDB collections to JSON (backup utility)
 ├── requirements.txt
 ├── .env.example
