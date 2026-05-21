@@ -33,9 +33,9 @@ The UI also surfaces live news/publication cards and shows strategy performance 
 
 | Layer | Technology |
 |---|---|
-| Database | MongoDB Atlas M10 — Vector Search + Full-Text Search |
-| Embeddings | OpenAI `text-embedding-3-small` |
-| LLM | OpenAI `gpt-4o-mini` |
+| Database | MongoDB Atlas M0 — Vector Search + Full-Text Search |
+| Embeddings | Google `gemini-embedding-001` (768 dims) |
+| LLM | Google `gemini-2.0-flash` (with fallback to `gemini-2.0-flash-lite`, `gemini-2.5-flash`) |
 | Backend | Python / FastAPI |
 | Voice | ElevenLabs `eleven_multilingual_v2` |
 | Observability | LangSmith (tracing every classify → retrieve → evaluate → generate step) |
@@ -87,27 +87,40 @@ cp .env.example .env
 
 ```env
 MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
-OPENAI_API_KEY=sk-...
+GOOGLE_API_KEY=AIza...
 ELEVENLABS_API_KEY=sk_...
-DB_NAME=nhs_hackathon
+DB_NAME=agentic-evolution-hackathon
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_PROJECT=nhs-policy-navigator
 LANGCHAIN_API_KEY=lsv2_...
 ```
 
+`GOOGLE_API_KEY` is a free-tier Google AI Studio key — no billing required. Obtain one at [aistudio.google.com](https://aistudio.google.com/apikey).
+
 ### 3. Download PDFs
 
 Download both PDFs from [https://www.england.nhs.uk/long-term-plan/](https://www.england.nhs.uk/long-term-plan/) and place them in the project root (see filenames above).
 
-### 4. Ingest NHS plan documents into MongoDB
+### 4. Restore the MongoDB data from the dump (recommended)
+
+The repository includes a pre-built dump of all 586 embedded chunks (using `gemini-embedding-001`, 768 dims). This is the fastest way to get started — no PDF ingestion or embedding calls needed:
+
+```bash
+mongoimport --uri "$MONGODB_URI" --db agentic-evolution-hackathon \
+  --collection nhs_chunks --file dump/nhs_chunks.json --jsonArray
+```
+
+Then create both Atlas Search indexes manually in the Atlas UI (see [MongoDB Atlas index configuration](#mongodb-atlas-index-configuration) below).
+
+**Alternatively — ingest from scratch:**
 
 ```bash
 python ingest.py
 ```
 
-This chunks both PDFs, generates embeddings, loads chunks into MongoDB Atlas, and creates the vector + text search indexes. Takes ~5–10 minutes.
+This chunks both PDFs, generates Gemini embeddings, and loads them into MongoDB Atlas. Takes ~5–10 minutes. Then run `reembed.py` only if you need to re-embed existing documents.
 
-Wait for both indexes to show **READY** in Atlas UI -> Cluster -> Search Indexes before proceeding.
+Wait for both indexes to show **READY** in Atlas UI → Cluster → Search Indexes before running the app.
 
 Note: live news and publication sources are fetched at query time and do not require ingestion.
 
@@ -131,11 +144,13 @@ Two indexes are created automatically by `ingest.py`:
   "fields": [{
     "type": "vector",
     "path": "embedding",
-    "numDimensions": 1536,
+    "numDimensions": 768,
     "similarity": "cosine"
   }]
 }
 ```
+
+> ⚠️ `numDimensions` must be **768** to match `gemini-embedding-001`. Using 1536 (OpenAI) will cause vector search to return no results.
 
 **Text search index** (`text_index`, type: `search`):
 ```json
@@ -169,14 +184,29 @@ For `conceptual`, `comparative`, and `gap_analysis`, results may include:
 ```
 ├── agent.py          # Core multi-source adaptive retrieval logic
 ├── app.py            # FastAPI backend (query, stats, narrate endpoints)
+├── gemini.py         # Gemini REST API wrapper (embed + generate, no SDK)
 ├── ingest.py         # PDF ingestion + MongoDB index creation
+├── reembed.py        # One-shot re-embedding utility (OpenAI → Gemini migration)
+├── export_db.py      # Export MongoDB collections to JSON (backup utility)
 ├── requirements.txt
 ├── .env.example
+├── dump/
+│   ├── nhs_chunks.json   # 586 pre-embedded chunks (gemini-embedding-001, 768 dims)
+│   └── query_log.json    # Query history snapshot
+├── demo/
+│   └── narrate.py    # Demo narration script (ElevenLabs)
+├── img/              # Wireframes and design references
 ├── static/
 │   ├── index.html    # Frontend (single file)
 │   └── img/          # NHS England logo assets
 └── README.md
 ```
+
+---
+
+## Answer generation style
+
+Answers are generated to mirror the writing style of the NHS 10 Year Health Plan executive summary — authoritative, declarative, and dense with specific commitments, dates and figures. The system prompt explicitly references the plan's signature framing ("three shifts", "Neighbourhood Health Service", "decisive shift") and instructs the model to lead every response with a strong claim rather than a definition.
 
 ---
 

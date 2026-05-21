@@ -685,4 +685,80 @@
         const audio = document.getElementById("audioPlayer");
         audio.src = url;
         audio.play();
-        btn.textContent
+        btn.textContent = "▶ Listen to answer";
+        btn.disabled = false;
+      } else {
+        btn.textContent = "▶ Listen to answer";
+        btn.disabled = false;
+        alert("Narration unavailable.");
+      }
+    } catch(e) {
+      btn.textContent = "▶ Listen to answer";
+      btn.disabled = false;
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const res = await fetch("/api/stats");
+      const data = await res.json();
+      document.getElementById("totalCount").textContent = data.total_queries;
+
+      const stratPerf = data.strategy_performance || [];
+      if (stratPerf.length > 0) {
+        const maxScore = Math.max(...stratPerf.map(s => s.avg_score));
+        document.getElementById("strategyBars").innerHTML = stratPerf.map(s => `
+          <div class="strategy-bar">
+            <div class="strategy-label">
+              <span>${s._id.replace(/_/g,' ')}</span>
+              <span>${s.avg_score.toFixed(1)}/5 (${s.count})</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" style="width:${(s.avg_score/5)*100}%"></div></div>
+          </div>`).join("");
+      }
+
+      const typePerf = data.type_performance || [];
+      if (typePerf.length > 0) {
+        const maxCount = Math.max(...typePerf.map(t => t.count));
+        document.getElementById("typeBars").innerHTML = typePerf.map(t => `
+          <div class="strategy-bar">
+            <div class="strategy-label">
+              <span>${t._id}</span>
+              <span>${t.count} queries</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" style="width:${(t.count/maxCount)*100}%"></div></div>
+          </div>`).join("");
+      }
+
+      const recent = data.recent_queries || [];
+      if (recent.length > 0) {
+        document.getElementById("recentQueries").innerHTML = recent.map(r => `
+          <div class="recent-item">
+            <div class="rq-text">${r.query}</div>
+            <div class="rq-meta">
+              <span class="rq-type">${r.query_type}</span>
+              <span>${r.strategy.replace(/_/g,' ')}</span>
+              <span class="rq-score">${r.relevance_score.toFixed(1)}/5</span>
+              ${r.strategy_source === 'learned' ? '<span class="rq-learned">LEARNED</span>' : ''}
+            </div>
+          </div>`).join("");
+      }
+    } catch(e) {
+      console.error("Stats error:", e);
+    }
+  }
+
+  // Load stats on page load and auto-refresh
+  loadStats();
+  setInterval(loadStats, 30000);
+
+  // Enter key support
+  document.getElementById("queryInput").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      ask();
+    }
+  });
+</script>
+</body>
+</html>
