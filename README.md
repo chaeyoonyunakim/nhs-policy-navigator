@@ -26,7 +26,6 @@ For every query, the agent:
 5. **Checks historical performance** — after 5+ queries of the same type, the agent switches to whichever strategy has scored highest, adapting autonomously
 6. **Generates a grounded answer** with source-aware citations (plan pages + live sources where relevant)
 7. **Self-evaluates** result quality (1–5 score) and **logs everything back to MongoDB**, enabling future adaptation
-8. **Narrates the answer** via ElevenLabs voice synthesis
 
 The UI also surfaces live news/publication cards and shows strategy performance + query history from MongoDB, making adaptation visible in real time. A dedicated **Previous Queries** tab browses the full query history (paginated, 10 per page), and any past question — in the sidebar or that tab — can be copied for reuse.
 
@@ -40,9 +39,9 @@ The UI also surfaces live news/publication cards and shows strategy performance 
 | Embeddings | Google `gemini-embedding-001` (768 dims) |
 | LLM | Google `gemini-2.0-flash` (with fallback to `gemini-2.0-flash-lite`, `gemini-2.5-flash`) |
 | Backend | Python / FastAPI |
-| Voice | ElevenLabs `eleven_multilingual_v2` |
-| Observability | LangSmith (tracing every classify → retrieve → evaluate → generate step) |
 | Frontend | Vanilla HTML/JS (single file) |
+
+> **Runs at zero external cost.** The entire stack uses only free-tier services: MongoDB Atlas **M0** (free forever) and the Google Gemini **free tier** for both embeddings and generation. There are no paid dependencies — no observability platform and no text-to-speech provider — so the project can be handed over and run without procuring any additional tooling.
 
 ---
 
@@ -101,15 +100,10 @@ Open `.env` and fill in your credentials:
 ```env
 MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
 GOOGLE_API_KEY=AIza...
-ELEVENLABS_API_KEY=sk_...
 DB_NAME=agentic-evolution-hackathon
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_PROJECT=nhs-policy-navigator
-LANGCHAIN_API_KEY=lsv2_...
 ```
 
-`GOOGLE_API_KEY` is free — no billing required. Obtain one at [aistudio.google.com](https://aistudio.google.com/apikey).  
-`ELEVENLABS_API_KEY` and `LANGCHAIN_API_KEY` are optional (voice narration and tracing respectively).
+`GOOGLE_API_KEY` is free — no billing required. Obtain one at [aistudio.google.com](https://aistudio.google.com/apikey). Together with your MongoDB Atlas connection string, it is the only credential the app needs — there are no paid third-party services to configure.
 
 ### 4. Download PDFs
 
@@ -197,7 +191,7 @@ For `conceptual`, `comparative`, and `gap_analysis`, results may include:
 
 ```
 ├── agent.py          # Core multi-source adaptive retrieval logic
-├── app.py            # FastAPI backend (query, stats, queries, narrate endpoints)
+├── app.py            # FastAPI backend (query, stats, queries, health endpoints)
 ├── gemini.py         # Gemini REST API wrapper (embed + generate, no SDK)
 ├── ingest.py         # PDF ingestion + MongoDB index creation
 ├── reembed.py        # One-shot utility: re-embed existing docs (e.g. after model change)
@@ -207,8 +201,6 @@ For `conceptual`, `comparative`, and `gap_analysis`, results may include:
 ├── dump/
 │   ├── nhs_chunks.json   # 586 pre-embedded chunks (gemini-embedding-001, 768 dims)
 │   └── query_log.json    # Query history snapshot
-├── demo/
-│   └── narrate.py    # Demo narration script (ElevenLabs)
 ├── img/              # Wireframes and design references
 ├── static/
 │   ├── index.html    # Frontend (single file)
@@ -234,16 +226,12 @@ Answers are generated to mirror the writing style of the NHS 10 Year Health Plan
 
 ## Observability
 
-All LLM calls are traced via LangSmith. Each query produces a trace showing:
-- Query classification
-- Source routing decision (plan/news/publications)
-- Strategy selection (default vs. learned from data)
-- Retrieval results
-- Chunk reranking
-- Self-evaluation score
-- Generated answer
+Observability is built in and requires no external platform. Every query is logged to the MongoDB `query_log` collection with its full decision trail:
+- Query classification and source routing decision (plan/news/publications)
+- Strategy selection (default vs. learned from data) and relevance/self-evaluation score
+- Sources queried and counts of live news / publications fetched
 
-View traces at [smith.langchain.com](https://smith.langchain.com) → `nhs-policy-navigator` project.
+The UI makes this visible in real time — strategy performance, query-type distribution, and the browsable **Previous Queries** history all read directly from MongoDB, so you can watch the agent adapt without any third-party tracing service.
 
 ---
 
