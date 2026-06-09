@@ -56,6 +56,26 @@ async def stats_endpoint():
             "type_performance": type_perf, "recent_queries": recent}
 
 
+@app.get("/api/queries")
+async def queries_endpoint(page: int = 1, per_page: int = 10):
+    """Paginated history of every query asked, newest first."""
+    per_page = max(1, min(per_page, 50))
+    total = log_col.count_documents({})
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    docs = list(
+        log_col.find({}, {"query": 1, "query_type": 1, "strategy": 1, "relevance_score": 1,
+                          "strategy_source": 1, "timestamp": 1, "_id": 0})
+        .sort("timestamp", -1).skip((page - 1) * per_page).limit(per_page)
+    )
+    for d in docs:
+        ts = d.get("timestamp")
+        if ts is not None:
+            d["timestamp"] = ts.isoformat() + "Z"
+    return {"queries": docs, "total": total, "page": page,
+            "per_page": per_page, "total_pages": total_pages}
+
+
 @app.post("/api/narrate")
 def narrate_endpoint(request: QueryRequest):
     if not ELEVENLABS_KEY:
