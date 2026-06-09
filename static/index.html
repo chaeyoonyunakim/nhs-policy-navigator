@@ -235,7 +235,6 @@
   .tag-hybrid  { background: #eaf3de; color: #00401a; border-color: #9bc85e; }
   .tag-text    { background: #fff5e0; color: #6a4000; border-color: #f5c06b; }
   .tag-learned { background: #f0e8f8; color: #3d0079; border-color: #c6a0e8; }
-  .tag-score   { background: #f0f4f5; color: #4c6272; border-color: #d8dde0; }
   .tag-plan    { background: #e5f0f8; color: #005EB8; border-color: #adc3e8; }
   .tag-news    { background: #e8f5e9; color: #00401a; border-color: #81c784; }
   .tag-pub     { background: #fff3e0; color: #7c4600; border-color: #ffb74d; }
@@ -685,7 +684,6 @@
     if (data.strategy_source === "learned") {
       meta += `<span class="tag tag-learned">&#129504; Learned</span>`;
     }
-    meta += `<span class="tag tag-score">&#9733; ${data.relevance_score.toFixed(1)}/5</span>`;
     document.getElementById("metaRow").innerHTML = meta;
 
     document.getElementById("answerText").textContent = data.answer;
