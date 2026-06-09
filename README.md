@@ -37,11 +37,11 @@ The UI also surfaces live news/publication cards and shows strategy performance 
 |---|---|
 | Database | MongoDB Atlas M0 — Vector Search + Full-Text Search |
 | Embeddings | Google `gemini-embedding-001` (768 dims) |
-| LLM | Google `gemini-2.0-flash` (with fallback to `gemini-2.0-flash-lite`, `gemini-2.5-flash`) |
+| LLM | Pluggable — a **local model via Ollama** (default, e.g. `qwen2.5`) or Google `gemini-2.0-flash` (with fallback to `gemini-2.0-flash-lite`, `gemini-2.5-flash`) |
 | Backend | Python / FastAPI |
 | Frontend | Vanilla HTML/JS (single file) |
 
-> **Runs at zero external cost.** The entire stack uses only free-tier services: MongoDB Atlas **M0** (free forever) and the Google Gemini **free tier** for both embeddings and generation. There are no paid dependencies — no observability platform and no text-to-speech provider — so the project can be handed over and run without procuring any additional tooling.
+> **Runs at zero external cost.** The entire stack uses only free-tier / local components: MongoDB Atlas **M0** (free forever), the Google Gemini **free tier** for embeddings, and a **local LLM via Ollama** for generation (no per-token cost, and document content never leaves the machine). There are no paid dependencies — no observability platform and no text-to-speech provider — so the project can be handed over and run without procuring any additional tooling.
 
 ---
 
@@ -142,6 +142,33 @@ Open [http://localhost:8000](http://localhost:8000)
 
 ---
 
+## Running with a local LLM (Ollama)
+
+For confidential or non-public material, answer generation can run entirely on a **local model via [Ollama](https://ollama.com)** so that no document content is sent to a hosted API. This is the **default** (`LLM_PROVIDER=ollama`).
+
+1. Install Ollama and pull any chat model you like:
+
+   ```bash
+   ollama pull qwen2.5        # or qwen3, llama3.1, mistral, …
+   ollama list                # confirm the exact name/tag you have
+   ```
+
+2. Point the app at your model in `.env`:
+
+   ```env
+   LLM_PROVIDER=ollama
+   OLLAMA_MODEL=qwen2.5       # must match a name from `ollama list`
+   OLLAMA_HOST=http://localhost:11434
+   ```
+
+3. Run the app as usual. Classification, re-ranking, answer generation, and self-evaluation all go to the local model; the retrieved (potentially confidential) chunks never leave the machine.
+
+To use the hosted API instead, set `LLM_PROVIDER=gemini`.
+
+> **Scope:** only *generation* is local. **Embeddings still use Gemini** (`gemini-embedding-001`, 768 dims) so the existing Atlas vector index stays valid — `GOOGLE_API_KEY` is therefore still required. Query text is embedded via Gemini; retrieved document content is processed only by the local model. Fully offline embeddings would require re-embedding the corpus with a local model and recreating the vector index at matching dimensions.
+
+---
+
 ## MongoDB Atlas index configuration
 
 Two indexes are created automatically by `ingest.py`:
@@ -192,7 +219,8 @@ For `conceptual`, `comparative`, and `gap_analysis`, results may include:
 ```
 ├── agent.py          # Core multi-source adaptive retrieval logic
 ├── app.py            # FastAPI backend (query, stats, queries, health endpoints)
-├── gemini.py         # Gemini REST API wrapper (embed + generate, no SDK)
+├── llm.py            # Generation provider dispatch (local Ollama / hosted Gemini)
+├── gemini.py         # Gemini REST API wrapper (embeddings + Gemini generation, no SDK)
 ├── ingest.py         # PDF ingestion + MongoDB index creation
 ├── reembed.py        # One-shot utility: re-embed existing docs (e.g. after model change)
 ├── export_db.py      # Export MongoDB collections to JSON (backup utility)

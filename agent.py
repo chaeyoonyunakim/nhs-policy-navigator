@@ -8,7 +8,8 @@ from email.utils import parsedate_to_datetime
 import os
 
 import httpx
-from gemini import embed, generate
+from gemini import embed
+from llm import generate
 from pymongo.collection import Collection
 
 
@@ -36,7 +37,12 @@ def classify_query(query: str) -> str:
         "- gap_analysis: what is missing, not addressed, or absent from the plan\n\n"
         "Return ONLY the type name.\n\nQuery: " + query
     ).lower()
-    return result if result in {"factual", "conceptual", "comparative", "gap_analysis"} else "conceptual"
+    types = ("factual", "conceptual", "comparative", "gap_analysis")
+    if result in types:
+        return result
+    # Local / verbose models may wrap the label in extra words — find it.
+    normalized = result.replace("gap analysis", "gap_analysis")
+    return next((t for t in types if t in normalized), "conceptual")
 
 
 # -- Source Selection ----------------------------------------------------------
