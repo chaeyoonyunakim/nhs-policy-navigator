@@ -10,15 +10,11 @@ import os
 import httpx
 from gemini import embed, generate
 from pymongo.collection import Collection
-from langsmith import traceable
-
-
 
 
 
 # -- Embedding -----------------------------------------------------------------
 
-@traceable(name="get_embedding")
 def get_embedding(text: str) -> list:
     return embed(text)
 
@@ -31,7 +27,6 @@ def llm(prompt: str) -> str:
 
 # -- Query Classification ------------------------------------------------------
 
-@traceable(name="classify_query")
 def classify_query(query: str) -> str:
     result = llm(
         "Classify this NHS policy query into exactly one type:\n"
@@ -94,7 +89,6 @@ def retrieve_hybrid(query: str, collection: Collection, n: int = 6) -> list:
 
 # -- Live NHS News via RSS -----------------------------------------------------
 
-@traceable(name="fetch_nhs_news")
 def fetch_nhs_news(query: str, max_candidates: int = 20) -> list:
     try:
         r = httpx.get("https://www.england.nhs.uk/feed/", timeout=10.0,
@@ -158,7 +152,6 @@ PUBLICATION_SEEDS = [
 PLAN_CUTOFF = "2025-07-03"
 
 
-@traceable(name="fetch_nhs_publications")
 def fetch_nhs_publications(query: str) -> list:
     live_pubs = []
     try:
@@ -203,7 +196,6 @@ def fetch_nhs_publications(query: str) -> list:
 
 # -- Re-ranking ----------------------------------------------------------------
 
-@traceable(name="rerank_chunks")
 def rerank_chunks(query: str, chunks: list) -> list:
     if len(chunks) <= 1:
         return chunks
@@ -228,7 +220,6 @@ def rerank_chunks(query: str, chunks: list) -> list:
 
 # -- Answer Generation ---------------------------------------------------------
 
-@traceable(name="generate_answer")
 def generate_answer(query: str, query_type: str, chunks: list,
                     news_items: list = None, pub_items: list = None) -> str:
     if news_items is None:
@@ -315,7 +306,6 @@ def generate_answer(query: str, query_type: str, chunks: list,
 
 # -- Evaluation ----------------------------------------------------------------
 
-@traceable(name="evaluate_relevance")
 def evaluate_relevance(query: str, chunks: list) -> float:
     if not chunks:
         return 1.0

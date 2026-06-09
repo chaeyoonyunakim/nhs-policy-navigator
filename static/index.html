@@ -325,21 +325,6 @@
     margin-bottom: 4px;
   }
 
-  .btn-voice {
-    margin-top: 16px;
-    background: white;
-    border: 2px solid #005EB8;
-    color: #005EB8;
-    border-radius: 4px;
-    padding: 8px 18px;
-    font-size: 13px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 600;
-    transition: all 0.15s;
-  }
-  .btn-voice:hover { background: #005EB8; color: white; }
-
   /* ── Right panel ── */
   .stats-panel { position: sticky; top: 24px; }
   .stats-card {
@@ -579,7 +564,6 @@
         </div>
         <div id="newsList"></div>
       </div>
-      <button class="btn-voice" id="narrateBtn" onclick="narrate()" style="display:none">&#9654; Listen to answer</button>
     </div>
 
   </main>
@@ -630,11 +614,7 @@
   MongoDB Agentic Evolution Hackathon 2025
 </footer>
 
-<audio id="audioPlayer" style="display:none"></audio>
-
 <script>
-  let currentAnswer = "";
-
   function setQuery(text) {
     document.getElementById("queryInput").value = text;
     document.getElementById("queryInput").focus();
@@ -670,7 +650,6 @@
       steps.forEach(s => document.getElementById(s).className = "loading-step done");
       if (!res.ok) throw new Error("Server error");
       const data = await res.json();
-      currentAnswer = data.answer;
       renderResult(data);
       await loadStats();
     } catch(e) {
@@ -745,39 +724,6 @@
         </div>`).join("");
     } else {
       document.getElementById("newsSection").style.display = "none";
-    }
-
-    document.getElementById("narrateBtn").style.display = "inline-block";
-    document.getElementById("narrateBtn").textContent = "▶ Listen to answer";
-    document.getElementById("narrateBtn").disabled = false;
-  }
-
-  async function narrate() {
-    const btn = document.getElementById("narrateBtn");
-    btn.textContent = "Loading audio...";
-    btn.disabled = true;
-    try {
-      const res = await fetch("/api/narrate", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({query: currentAnswer})
-      });
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = document.getElementById("audioPlayer");
-        audio.src = url;
-        audio.play();
-        btn.textContent = "▶ Listen to answer";
-        btn.disabled = false;
-      } else {
-        btn.textContent = "▶ Listen to answer";
-        btn.disabled = false;
-        alert("Narration unavailable.");
-      }
-    } catch(e) {
-      btn.textContent = "▶ Listen to answer";
-      btn.disabled = false;
     }
   }
 

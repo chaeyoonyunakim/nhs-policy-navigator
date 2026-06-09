@@ -18,8 +18,6 @@ db = mongo[os.environ.get("DB_NAME", "agentic-evolution-hackathon")]
 chunks_col = db["nhs_chunks"]
 log_col = db["query_log"]
 
-ELEVENLABS_KEY = os.environ.get("ELEVENLABS_API_KEY", "").strip()
-print(f"[startup] ElevenLabs key loaded: {'YES (' + ELEVENLABS_KEY[:8] + '...)' if ELEVENLABS_KEY else 'NO'}")
 print(f"[startup] Google API key loaded: {'YES' if os.environ.get('GOOGLE_API_KEY') else 'NO'}")
 
 app = FastAPI(title="NHS Policy Navigator")
@@ -74,24 +72,6 @@ async def queries_endpoint(page: int = 1, per_page: int = 10):
             d["timestamp"] = ts.isoformat() + "Z"
     return {"queries": docs, "total": total, "page": page,
             "per_page": per_page, "total_pages": total_pages}
-
-
-@app.post("/api/narrate")
-def narrate_endpoint(request: QueryRequest):
-    if not ELEVENLABS_KEY:
-        raise HTTPException(status_code=503, detail="ElevenLabs API key not configured.")
-    import httpx
-    response = httpx.post(
-        "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL",
-        headers={"xi-api-key": ELEVENLABS_KEY, "Content-Type": "application/json", "Accept": "audio/mpeg"},
-        json={"text": request.query[:1500], "model_id": "eleven_multilingual_v2",
-              "voice_settings": {"stability": 0.4, "similarity_boost": 0.8}},
-        timeout=30.0
-    )
-    if response.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"ElevenLabs {response.status_code}")
-    from fastapi.responses import Response
-    return Response(content=response.content, media_type="audio/mpeg")
 
 
 @app.get("/api/health")
