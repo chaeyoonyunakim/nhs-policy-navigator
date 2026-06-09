@@ -28,7 +28,7 @@ For every query, the agent:
 7. **Self-evaluates** result quality (1–5 score) and **logs everything back to MongoDB**, enabling future adaptation
 8. **Narrates the answer** via ElevenLabs voice synthesis
 
-The UI also surfaces live news/publication cards and shows strategy performance + query history from MongoDB, making adaptation visible in real time.
+The UI also surfaces live news/publication cards and shows strategy performance + query history from MongoDB, making adaptation visible in real time. A dedicated **Previous Queries** tab browses the full query history (paginated, 10 per page), and any past question — in the sidebar or that tab — can be copied for reuse.
 
 ---
 
@@ -197,7 +197,7 @@ For `conceptual`, `comparative`, and `gap_analysis`, results may include:
 
 ```
 ├── agent.py          # Core multi-source adaptive retrieval logic
-├── app.py            # FastAPI backend (query, stats, narrate endpoints)
+├── app.py            # FastAPI backend (query, stats, queries, narrate endpoints)
 ├── gemini.py         # Gemini REST API wrapper (embed + generate, no SDK)
 ├── ingest.py         # PDF ingestion + MongoDB index creation
 ├── reembed.py        # One-shot utility: re-embed existing docs (e.g. after model change)

@@ -394,14 +394,42 @@
     font-size: 13px;
   }
   .recent-item:last-child { border-bottom: none; }
+  .recent-item .rq-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
   .recent-item .rq-text {
     color: #212b32;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     font-weight: 500;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
+  .recent-item .rq-text.expanded {
+    -webkit-line-clamp: unset;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .rq-copy {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid #d8dde0;
+    border-radius: 4px;
+    color: #768692;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.4;
+    padding: 1px 7px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .rq-copy:hover { background: #f0f4f5; color: #005EB8; border-color: #005EB8; }
+  .rq-copy.copied { color: #007f3b; border-color: #007f3b; background: #f0f9f3; }
   .recent-item .rq-meta {
     display: flex;
     gap: 8px;
@@ -414,6 +442,51 @@
   .rq-learned { color: #7b00d4; font-size: 10px; }
 
   .no-data { font-size: 12px; color: #aeb7bd; text-align: center; padding: 10px 0; }
+
+  /* ── Previous Queries view ── */
+  .previous-view {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  .prev-subtitle {
+    font-size: 13px;
+    color: #768692;
+    margin: -4px 0 16px;
+  }
+  #prevList .recent-item { padding: 14px 0; }
+  #prevList .rq-text {
+    display: block;
+    -webkit-line-clamp: unset;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    cursor: default;
+    font-size: 14px;
+  }
+  .rq-time { color: #aeb7bd; }
+  .prev-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e8edee;
+  }
+  .prev-btn {
+    background: white;
+    border: 1px solid #005EB8;
+    color: #005EB8;
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .prev-btn:hover:not(:disabled) { background: #005EB8; color: white; }
+  .prev-btn:disabled { border-color: #d8dde0; color: #aeb7bd; cursor: not-allowed; }
+  .prev-info { font-size: 13px; color: #768692; }
 
   /* ── Footer ── */
   .nhs-footer {
@@ -450,14 +523,14 @@
 </header>
 <nav class="nhs-nav">
   <div class="nhs-nav-inner">
-    <a href="#" class="active">Policy search</a>
-    <a href="#" onclick="loadStats()">Performance</a>
+    <a href="#" id="tabSearch" class="active" onclick="showView('search'); return false;">Policy search</a>
+    <a href="#" id="tabPrevious" onclick="showView('previous'); return false;">Previous Queries</a>
     <a href="https://www.england.nhs.uk/long-term-plan/" target="_blank">NHS 10 Year Health Plan</a>
   </div>
 </nav>
 
 <!-- Main content -->
-<div class="page-layout">
+<div class="page-layout" id="viewSearch">
 
   <!-- Left: query + results -->
   <main>
@@ -539,6 +612,16 @@
 
   </aside>
 
+</div>
+
+<!-- Previous Queries view -->
+<div class="previous-view" id="viewPrevious" style="display:none">
+  <div class="card">
+    <div class="card-title">Previous queries</div>
+    <p class="prev-subtitle">Every question asked of the Policy Navigator, newest first. Click <strong>Copy</strong> to reuse any question.</p>
+    <div id="prevList"><div class="no-data">Loading…</div></div>
+    <div class="prev-pagination" id="prevPagination"></div>
+  </div>
 </div>
 
 <footer class="nhs-footer">
@@ -732,20 +815,108 @@
 
       const recent = data.recent_queries || [];
       if (recent.length > 0) {
-        document.getElementById("recentQueries").innerHTML = recent.map(r => `
-          <div class="recent-item">
-            <div class="rq-text">${r.query}</div>
-            <div class="rq-meta">
-              <span class="rq-type">${r.query_type}</span>
-              <span>${r.strategy.replace(/_/g,' ')}</span>
-              <span class="rq-score">${r.relevance_score.toFixed(1)}/5</span>
-              ${r.strategy_source === 'learned' ? '<span class="rq-learned">LEARNED</span>' : ''}
-            </div>
-          </div>`).join("");
+        document.getElementById("recentQueries").innerHTML =
+          recent.map(r => queryItemHtml(r, false)).join("");
       }
     } catch(e) {
       console.error("Stats error:", e);
     }
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  // Query lists: click text to expand full question, click Copy to grab it.
+  function attachQueryListClicks(el) {
+    el.addEventListener("click", async e => {
+      const copyBtn = e.target.closest(".rq-copy");
+      if (copyBtn) {
+        const text = copyBtn.closest(".recent-item").querySelector(".rq-text").textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          copyBtn.textContent = "✓ Copied";
+        } catch {
+          copyBtn.textContent = "Copy failed";
+        }
+        copyBtn.classList.add("copied");
+        clearTimeout(copyBtn._resetTimer);
+        copyBtn._resetTimer = setTimeout(() => {
+          copyBtn.textContent = "Copy";
+          copyBtn.classList.remove("copied");
+        }, 1500);
+        return;
+      }
+      const textEl = e.target.closest(".rq-text");
+      if (textEl) textEl.classList.toggle("expanded");
+    });
+  }
+  attachQueryListClicks(document.getElementById("recentQueries"));
+  attachQueryListClicks(document.getElementById("prevList"));
+
+  function queryItemHtml(r, withTime) {
+    const q = escapeHtml(r.query);
+    const score = Number(r.relevance_score || 0).toFixed(1);
+    const when = withTime && r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
+    return `
+      <div class="recent-item">
+        <div class="rq-head">
+          <div class="rq-text" title="${q}">${q}</div>
+          <button class="rq-copy" type="button" title="Copy question to clipboard" aria-label="Copy question to clipboard">Copy</button>
+        </div>
+        <div class="rq-meta">
+          <span class="rq-type">${escapeHtml(r.query_type)}</span>
+          <span>${escapeHtml(r.strategy).replace(/_/g,' ')}</span>
+          <span class="rq-score">${score}/5</span>
+          ${r.strategy_source === 'learned' ? '<span class="rq-learned">LEARNED</span>' : ''}
+          ${when ? `<span class="rq-time">${escapeHtml(when)}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // ── Tab / view switching ──
+  function showView(view) {
+    const isPrev = view === "previous";
+    document.getElementById("viewSearch").style.display = isPrev ? "none" : "";
+    document.getElementById("viewPrevious").style.display = isPrev ? "" : "none";
+    document.getElementById("tabSearch").classList.toggle("active", !isPrev);
+    document.getElementById("tabPrevious").classList.toggle("active", isPrev);
+    if (isPrev) loadPreviousQueries(1);
+  }
+
+  // ── Previous Queries: paginated full history, 10 per page ──
+  const PREV_PER_PAGE = 10;
+  async function loadPreviousQueries(page) {
+    const list = document.getElementById("prevList");
+    list.innerHTML = `<div class="no-data">Loading…</div>`;
+    document.getElementById("prevPagination").innerHTML = "";
+    try {
+      const res = await fetch(`/api/queries?page=${page}&per_page=${PREV_PER_PAGE}`);
+      const data = await res.json();
+      const queries = data.queries || [];
+      if (queries.length === 0) {
+        list.innerHTML = `<div class="no-data">No queries have been asked yet.</div>`;
+        return;
+      }
+      list.innerHTML = queries.map(r => queryItemHtml(r, true)).join("");
+      renderPrevPagination(data);
+    } catch (e) {
+      console.error("Previous queries error:", e);
+      list.innerHTML = `<div class="no-data">Could not load previous queries.</div>`;
+    }
+  }
+
+  function renderPrevPagination(data) {
+    const page = data.page, totalPages = data.total_pages, total = data.total;
+    document.getElementById("prevPagination").innerHTML = `
+      <button class="prev-btn" ${page <= 1 ? "disabled" : ""} onclick="loadPreviousQueries(${page - 1})">← Prev</button>
+      <span class="prev-info">Page ${page} of ${totalPages} · ${total} ${total === 1 ? "query" : "queries"}</span>
+      <button class="prev-btn" ${page >= totalPages ? "disabled" : ""} onclick="loadPreviousQueries(${page + 1})">Next →</button>`;
   }
 
   // Load stats on page load and auto-refresh
