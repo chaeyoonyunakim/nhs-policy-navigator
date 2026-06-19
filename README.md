@@ -12,7 +12,7 @@
 
 NHS Policy Navigator is an adaptive retrieval agent over the **NHS 10 Year Health Plan "Fit for the Future" (July 2025)** plus live NHS England updates. It doesn't just do RAG — it reasons about *how* to retrieve and *which sources* to use before it retrieves.
 
-![Refined draft wireframe](https://github.com/chaeyoonyunakim/nhs-policy-navigator/blob/main/img/refine-draft-2.png)
+![NHS Policy Navigator — Policy search view](img/v0-main.png)
 
 For every query, the agent:
 
