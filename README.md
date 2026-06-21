@@ -6,6 +6,8 @@
 > PoC built for the **MongoDB Agentic Evolution Hackathon** (London, May 2025)  
 > Theme: **Adaptive Retrieval** — an agentic system that actively modifies its query approach based on input and learns from past performance.
 
+**Live demo:** [https://nhs-policy-navigator.vercel.app](https://nhs-policy-navigator.vercel.app)
+
 ---
 
 ## What it does
@@ -142,6 +144,43 @@ Open [http://localhost:8000](http://localhost:8000)
 
 ---
 
+## Deploying to Vercel
+
+The app ships with a `vercel.json` and an `api/index.py` entry point, so it deploys directly to Vercel's Python serverless runtime.
+
+### 1. Install Vercel CLI and log in
+
+```bash
+npm i -g vercel
+vercel login
+```
+
+### 2. Set environment variables
+
+Use `printf` (not `echo`) to avoid BOM encoding issues on Windows:
+
+```bash
+printf 'your-mongodb-uri' | vercel env add MONGODB_URI production
+printf 'your-google-api-key' | vercel env add GOOGLE_API_KEY production
+printf 'agentic-evolution-hackathon' | vercel env add DB_NAME production
+```
+
+Repeat for `preview` and `development` environments as needed.
+
+### 3. Deploy
+
+```bash
+vercel --prod
+```
+
+### Notes
+
+- MongoDB Atlas must allow connections from `0.0.0.0/0` (Network Access → Add IP Address) since Vercel serverless functions use dynamic IPs.
+- The `StaticFiles` mount in `app.py` is skipped when `VERCEL=1` (set automatically by Vercel); static assets are served via `vercel.json` routes instead.
+- After deploying, run `ingest.py` locally pointing at the same Atlas cluster to populate the database before querying.
+
+---
+
 ## MongoDB Atlas index configuration
 
 Two indexes are created automatically by `ingest.py`:
@@ -198,6 +237,9 @@ For `conceptual`, `comparative`, and `gap_analysis`, results may include:
 ├── export_db.py      # Export MongoDB collections to JSON (backup utility)
 ├── requirements.txt
 ├── .env.example
+├── vercel.json       # Vercel deployment config (routing + Python build)
+├── api/
+│   └── index.py     # Vercel serverless function entry point
 ├── dump/
 │   ├── nhs_chunks.json   # 586 pre-embedded chunks (gemini-embedding-001, 768 dims)
 │   └── query_log.json    # Query history snapshot

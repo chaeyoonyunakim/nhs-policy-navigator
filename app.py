@@ -79,4 +79,5 @@ async def health():
     return {"status": "ok", "chunks_in_db": chunks_col.count_documents({})}
 
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+if not os.environ.get("VERCEL"):
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
