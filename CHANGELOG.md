@@ -25,6 +25,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Unit tests for facet parsing, cosine similarity, dedup routing and digest
   grouping (`tests/test_router.py`).
 
+### Changed
+
+- Simplified the main-page sidebar around the Query Router: the "Recent
+  queries" card is replaced by a "View all previous queries →" link to the
+  Previous Queries tab.
+
+### Removed
+
+- Removed the "Strategy performance" and "Query type distribution" dashboard
+  panels and the "Try:" example-query buttons from the main page. `/api/stats`
+  now returns only `total_queries`; per-strategy and per-type performance still
+  live in `query_log` and continue to drive the agent's learning.
+
 ## [1.0.0] - 2026-06-24
 
 ### Added
