@@ -19,6 +19,7 @@ from pymongo.collection import Collection
 from .config import get_settings
 from .gemini import embed, generate
 from .logging_config import get_logger
+from .router import route_to_digest, tag_facets
 
 logger = get_logger(__name__)
 
@@ -482,14 +483,22 @@ def _retrieve(strategy: str, query: str, collection: Collection) -> list[dict]:
     return retrieve_vector(query, collection)
 
 
-def adaptive_retrieve(query: str, chunks_col: Collection, log_col: Collection) -> dict:
+def adaptive_retrieve(
+    query: str,
+    chunks_col: Collection,
+    log_col: Collection,
+    digest_col: Collection | None = None,
+) -> dict:
     """Run the full adaptive retrieval pipeline for ``query``.
 
-    Classifies the query, routes to sources, selects (or learns) a retrieval
-    strategy, re-ranks results, generates an answer, self-evaluates and logs
-    the full decision trail to MongoDB.
+    Classifies the query, tags it with NHS domain facets, routes to sources,
+    selects (or learns) a retrieval strategy, re-ranks results, generates an
+    answer, self-evaluates and logs the full decision trail to MongoDB. When a
+    ``digest_col`` is supplied, the query is also routed into the deduped,
+    categorised digest that powers the main-page panel.
     """
     query_type = classify_query(query)
+    facets = tag_facets(query)
     sources = select_sources(query_type)
 
     history = list(
@@ -524,6 +533,8 @@ def adaptive_retrieve(query: str, chunks_col: Collection, log_col: Collection) -
             "strategy": strategy,
             "strategy_source": strategy_source,
             "sources_queried": sources,
+            "care_settings": facets["care_settings"],
+            "professional_groups": facets["professional_groups"],
             "news_fetched": len(news_items),
             "pubs_fetched": len(pub_items),
             "relevance_score": score,
@@ -532,12 +543,23 @@ def adaptive_retrieve(query: str, chunks_col: Collection, log_col: Collection) -
         }
     )
 
+    # Route into the deduped, categorised digest (best-effort; never blocks).
+    if digest_col is not None:
+        try:
+            embedding = get_embedding(query)
+        except Exception as err:  # noqa: BLE001 - dedup is best-effort
+            logger.error("Digest embedding failed: %s", err)
+            embedding = []
+        route_to_digest(query, embedding, facets, score, strategy, digest_col)
+
     return {
         "query": query,
         "query_type": query_type,
         "strategy": strategy,
         "strategy_source": strategy_source,
         "sources_queried": sources,
+        "care_settings": facets["care_settings"],
+        "professional_groups": facets["professional_groups"],
         "answer": answer,
         "sources": [
             {
