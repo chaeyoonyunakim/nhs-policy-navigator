@@ -34,7 +34,7 @@ For every query, the agent:
 
 The UI also surfaces live news/publication cards and shows strategy performance + query history from MongoDB, making adaptation visible in real time. A dedicated **Previous Queries** tab browses the full query history (paginated, 10 per page, filterable by care setting / professional group), and any past question — in the sidebar or that tab — can be copied for reuse.
 
-A **Query Router** sits alongside this. On every query it tags the question with NHS-domain facets — a **care setting** (Acute, Ambulance, Community, Mental Health and Learning Disability, Primary Care, Primary Care – Wider Primary Care) and a **professional group** (Medical, Clinical non-medical, Dentistry) — using the same Gemini wrapper, multi-label so one query can appear under several domains. Near-identical questions (cosine ≥ 0.92 on the query embedding) are **deduplicated** into a single cluster with an "asked N×" counter and surfaced as a categorised **digest** on the main page (right-bottom) — the **top 10 most-asked** questions per category — with a care-setting ⇄ professional-group toggle and one-click re-run. The digest (`query_digest`, via `GET /api/digest`) is the curated, deduped highlights view; the Previous Queries tab remains the complete, append-only log.
+A **Query Router** runs alongside retrieval. It tags every query (multi-label) with a **care setting** and a **professional group** from a fixed NHS taxonomy, using the same Gemini wrapper. Near-identical questions (cosine ≥ 0.92) are **deduplicated** into clusters with an "asked N×" counter. The main page shows these as a categorised **digest** — the top 10 most-asked per category, via `GET /api/digest` — while the Previous Queries tab keeps the full, append-only log.
 
 ---
 
