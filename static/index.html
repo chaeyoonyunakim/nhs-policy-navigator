@@ -464,6 +464,19 @@
   .digest-facet-btn.active { background: #005EB8; color: white; }
   .digest-facet-btn:not(.active):hover { background: #d3e0ef; color: #003087; }
 
+  .digest-viewall {
+    display: block;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #e8edee;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #005EB8;
+    text-decoration: none;
+    text-align: right;
+  }
+  .digest-viewall:hover { color: #003087; text-decoration: underline; }
+
   .digest-group { margin-bottom: 14px; }
   .digest-group:last-child { margin-bottom: 0; }
   .facet-chip {
@@ -736,11 +749,6 @@
       <div id="typeBars"><div class="no-data">No data yet</div></div>
     </div>
 
-    <div class="stats-card">
-      <h3>Recent queries</h3>
-      <div id="recentQueries"><div class="no-data">Ask something to get started</div></div>
-    </div>
-
     <!-- Query Router: deduped, categorised digest of past questions -->
     <div class="stats-card digest-card">
       <h3>Past questions by category <span class="digest-tag">ROUTER</span></h3>
@@ -749,6 +757,7 @@
         <button type="button" class="digest-facet-btn" data-facet="group" onclick="setDigestFacet('group')">Professional group</button>
       </div>
       <div id="digestContent"><div class="no-data">Ask something to get started</div></div>
+      <a href="#" class="digest-viewall" onclick="showView('previous'); return false;">View all previous queries →</a>
     </div>
 
   </aside>
@@ -935,12 +944,6 @@
             <div class="bar-bg"><div class="bar-fill" style="width:${(t.count/maxCount)*100}%"></div></div>
           </div>`).join("");
       }
-
-      const recent = data.recent_queries || [];
-      if (recent.length > 0) {
-        document.getElementById("recentQueries").innerHTML =
-          recent.map(r => queryItemHtml(r, false)).join("");
-      }
     } catch(e) {
       console.error("Stats error:", e);
     }
@@ -979,7 +982,6 @@
       if (textEl) textEl.classList.toggle("expanded");
     });
   }
-  attachQueryListClicks(document.getElementById("recentQueries"));
   attachQueryListClicks(document.getElementById("prevList"));
 
   // Shorten the long canonical taxonomy labels for compact chips.
