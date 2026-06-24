@@ -319,12 +319,21 @@
     border-bottom: 1px solid #e8edee;
   }
 
-  .total-count {
-    text-align: center;
-    padding: 12px 0 6px;
+  /* ── This-query metrics legend ── */
+  .metric-row { padding: 9px 0; border-bottom: 1px solid #eef1f3; }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-head { display: flex; align-items: center; gap: 8px; }
+  .metric-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #768692;
+    min-width: 66px;
   }
-  .total-count .num { font-size: 36px; font-weight: 600; color: #005EB8; line-height: 1; }
-  .total-count .lbl { font-size: 12px; color: #768692; margin-top: 4px; }
+  .metric-desc { font-size: 12px; color: #4c6272; margin-top: 5px; line-height: 1.45; }
+  .tag-score { background: #eef1f4; color: #4c6272; border-color: #cdd7de; }
+  .digest-tag.total-tag { background: #768692; }
 
   .recent-item {
     padding: 10px 0;
@@ -678,16 +687,13 @@
   <aside class="stats-panel">
 
     <div class="stats-card">
-      <h3>Queries processed</h3>
-      <div class="total-count">
-        <div class="num" id="totalCount">—</div>
-        <div class="lbl">total queries</div>
-      </div>
+      <h3>This query</h3>
+      <div id="queryMetrics"><div class="no-data">Run a search to see how it was answered.</div></div>
     </div>
 
     <!-- Query Router: deduped, categorised digest of past questions -->
     <div class="stats-card digest-card">
-      <h3>Past questions by category <span class="digest-tag">ROUTER</span></h3>
+      <h3>Past questions by category <span class="digest-tag total-tag" id="totalCount" title="Total queries processed">—</span></h3>
       <div class="digest-toggle">
         <button type="button" class="digest-facet-btn active" data-facet="setting" onclick="setDigestFacet('setting')">Care setting</button>
         <button type="button" class="digest-facet-btn" data-facet="group" onclick="setDigestFacet('group')">Professional group</button>
@@ -809,6 +815,48 @@
       meta += `<span class="tag tag-learned">&#129504; Learned</span>`;
     }
     document.getElementById("metaRow").innerHTML = meta;
+
+    // "This query" legend: each selected metric with a plain-English description.
+    const typeDesc = {
+      factual: "a specific fact, figure, target or date",
+      conceptual: "themes, strategies or how something works",
+      comparative: "comparing two or more things",
+      gap_analysis: "what's missing or not addressed in the plan"
+    };
+    const stratDesc = {
+      text_search: "keyword / full-text match",
+      vector_search: "semantic similarity using embeddings",
+      hybrid_search: "keyword and semantic search, combined"
+    };
+    const sourceLabel = { plan: "NHS Plan", news: "Live News", publications: "Publications" };
+    const sourcesText = sources.map(s => sourceLabel[s] || s).join(" + ");
+    const learned = data.strategy_source === "learned";
+    const score = Number(data.relevance_score || 0).toFixed(1);
+
+    const metricRow = (label, chipHtml, desc) => `
+      <div class="metric-row">
+        <div class="metric-head"><span class="metric-label">${label}</span>${chipHtml}</div>
+        <div class="metric-desc">${desc}</div>
+      </div>`;
+
+    document.getElementById("queryMetrics").innerHTML =
+      metricRow("Type",
+        `<span class="tag tag-type">${typeLabel[data.query_type] || data.query_type}</span>`,
+        typeDesc[data.query_type] || "how the question was classified") +
+      metricRow("Sources",
+        `<span class="tag tag-plan">${escapeHtml(sourcesText)}</span>`,
+        "which corpora were searched for this query type") +
+      metricRow("Strategy",
+        `<span class="tag ${stratClass[data.strategy] || 'tag-vector'}">${stratLabel[data.strategy] || data.strategy}</span>`,
+        stratDesc[data.strategy] || "how it searched the NHS plan") +
+      metricRow("Selection",
+        `<span class="tag ${learned ? 'tag-learned' : 'tag-type'}">${learned ? '&#129504; Learned' : 'Default'}</span>`,
+        learned
+          ? "strategy chosen from past performance (5+ prior queries of this type)"
+          : "preset default strategy for this query type") +
+      metricRow("Relevance",
+        `<span class="tag tag-score">${score}/5</span>`,
+        "the agent's self-rated quality of the retrieved context");
 
     document.getElementById("answerText").textContent = data.answer;
 
