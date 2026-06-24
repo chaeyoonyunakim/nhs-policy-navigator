@@ -177,3 +177,28 @@ def test_build_digest_omits_empty_groups() -> None:
 def test_build_digest_falls_back_to_setting_for_unknown_facet() -> None:
     digest = FakeCollection(documents=[])
     assert router.build_digest("bogus", digest)["facet"] == "setting"
+
+
+def test_build_digest_caps_each_group_at_top_n() -> None:
+    # 12 distinct Acute questions; only the 10 most-asked should be returned.
+    documents = [
+        {
+            "canonical_query": f"acute question {i}",
+            "care_settings": ["Acute"],
+            "professional_groups": [],
+            "asked_count": i,
+            "best_score": 4.0,
+            "last_strategy": "vector_search",
+        }
+        for i in range(1, 13)
+    ]
+    digest = FakeCollection(documents=documents)
+
+    acute = next(g for g in router.build_digest("setting", digest)["groups"] if g["key"] == "Acute")
+
+    assert len(acute["queries"]) == router.DIGEST_TOP_N == 10
+    assert acute["count"] == 10
+    assert acute["total"] == 12
+    # Ranked most-asked first; the two least-asked (1, 2) are dropped.
+    assert acute["queries"][0]["asked_count"] == 12
+    assert acute["queries"][-1]["asked_count"] == 3
