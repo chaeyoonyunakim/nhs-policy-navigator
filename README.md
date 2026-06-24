@@ -1,4 +1,7 @@
 [![status: experimental](https://github.com/GIScience/badges/raw/master/status/experimental.svg)](https://github.com/GIScience/badges#experimental)
+[![CI](https://github.com/chaeyoonyunakim/nhs-policy-navigator/actions/workflows/ci.yml/badge.svg)](https://github.com/chaeyoonyunakim/nhs-policy-navigator/actions/workflows/ci.yml)
+[![RAP level: Gold](https://img.shields.io/badge/RAP-Gold-ffd700)](https://nhsdigital.github.io/rap-community-of-practice/introduction_to_RAP/levels_of_RAP/)
+[![code style: black](https://img.shields.io/badge/code%20style-black-000000)](https://github.com/psf/black)
 
 
 # NHS Policy Navigator — Adaptive Multi-Source Retrieval Agent
@@ -88,7 +91,9 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 ### 2. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt          # runtime only
+# or, for development (tests, linters, pre-commit hooks):
+make install-dev
 ```
 
 ### 3. Configure environment
@@ -125,7 +130,7 @@ Then create both Atlas Search indexes manually in the Atlas UI (see [MongoDB Atl
 **Alternatively — ingest from scratch:**
 
 ```bash
-python ingest.py
+make ingest        # or: python -m nhs_policy_navigator.pipeline.ingest
 ```
 
 This chunks both PDFs, generates `gemini-embedding-001` embeddings (768 dims), loads all chunks into MongoDB Atlas, and creates both search indexes automatically. Takes ~5–10 minutes.
@@ -137,7 +142,7 @@ Note: live news and publication sources are fetched at query time and do not req
 ### 6. Run the app
 
 ```bash
-python -m uvicorn app:app --reload
+make run        # or: python -m uvicorn nhs_policy_navigator.app:app --reload --app-dir src
 ```
 
 Open [http://localhost:8000](http://localhost:8000)
@@ -228,27 +233,58 @@ For `conceptual`, `comparative`, and `gap_analysis`, results may include:
 
 ## Project structure
 
+The code is packaged under `src/` following the
+[NHS England "package your code"](https://github.com/nhsengland/package-your-code-workshop)
+conventions.
+
 ```
-├── agent.py          # Core multi-source adaptive retrieval logic
-├── app.py            # FastAPI backend (query, stats, queries, health endpoints)
-├── gemini.py         # Gemini REST API wrapper (embed + generate, no SDK)
-├── ingest.py         # PDF ingestion + MongoDB index creation
-├── reembed.py        # One-shot utility: re-embed existing docs (e.g. after model change)
-├── export_db.py      # Export MongoDB collections to JSON (backup utility)
-├── requirements.txt
-├── .env.example
-├── vercel.json       # Vercel deployment config (routing + Python build)
-├── api/
-│   └── index.py     # Vercel serverless function entry point
-├── dump/
-│   ├── nhs_chunks.json   # 586 pre-embedded chunks (gemini-embedding-001, 768 dims)
-│   └── query_log.json    # Query history snapshot
-├── img/              # Wireframes and design references
-├── static/
-│   ├── index.html    # Frontend (single file)
-│   └── img/          # NHS England logo assets
+├── src/nhs_policy_navigator/
+│   ├── __init__.py        # Package version
+│   ├── config.py          # Environment-driven settings (no hard-coded secrets)
+│   ├── logging_config.py  # Structured logging setup
+│   ├── gemini.py          # Gemini REST API wrapper (embed + generate, no SDK)
+│   ├── agent.py           # Core multi-source adaptive retrieval logic
+│   ├── app.py             # FastAPI backend (query, stats, queries, health)
+│   └── pipeline/
+│       ├── ingest.py      # PDF ingestion + MongoDB index creation
+│       ├── reembed.py     # Re-embed existing docs (e.g. after model change)
+│       └── export_db.py   # Export MongoDB collections to JSON (backup)
+├── tests/                 # pytest unit tests (external services mocked)
+├── docs/                  # Architecture, user guide, RAP compliance
+├── api/index.py           # Vercel serverless entry point
+├── static/                # Frontend (single-file HTML/JS) + NHS logo assets
+├── dump/                  # Pre-embedded chunks + query history snapshot
+├── img/                   # Wireframes and design references
+├── .github/workflows/     # CI/CD (ruff + black + pytest)
+├── pyproject.toml         # Packaging + tool config (black, ruff, pytest)
+├── Makefile               # Common developer tasks (make help)
+├── requirements.txt       # Runtime dependencies
+├── requirements-dev.txt   # Development dependencies
+├── .pre-commit-config.yaml
+├── .editorconfig
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── vercel.json            # Vercel deployment config (routing + Python build)
 └── README.md
 ```
+
+## Development
+
+This project is structured to meet **Gold RAP** (see
+[`docs/rap_compliance.md`](docs/rap_compliance.md)).
+
+```bash
+make install-dev   # install dev deps + pre-commit hooks
+make format        # auto-format with ruff + black
+make lint          # ruff + black --check
+make test          # run the pytest suite
+make coverage      # tests with a coverage report
+make help          # list all targets
+```
+
+Continuous integration (GitHub Actions) runs lint and tests on every pull
+request across Python 3.10–3.12. All changes are reviewed by a human before
+merge.
 
 ---
 
@@ -297,6 +333,27 @@ NHS colour palette used:
 | NHS Green | `#007f3b` |
 
 ---
+
+## Reproducible Analytical Pipeline (RAP)
+
+This repository is organised to meet **Gold RAP** under the
+[NHS RAP Community of Practice maturity framework](https://nhsdigital.github.io/rap-community-of-practice/introduction_to_RAP/levels_of_RAP/),
+and draws on the
+[NHS England repository template](https://github.com/nhs-england-tools/repository-template)
+and the [NHS England "package your code" workshop](https://github.com/nhsengland/package-your-code-workshop).
+
+A full criterion-by-criterion mapping is in
+[`docs/rap_compliance.md`](docs/rap_compliance.md): packaged code, environment
+configuration, structured logging, a unit test suite, CI/CD, a changelog and
+semantic versioning.
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [User guide](docs/user_guide.md)
+- [RAP compliance](docs/rap_compliance.md)
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
 
 ## Licence
 
