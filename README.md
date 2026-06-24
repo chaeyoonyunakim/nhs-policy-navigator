@@ -6,7 +6,7 @@
 
 # NHS Policy Navigator — Adaptive Multi-Source Retrieval Agent
 
-> PoC built for the **MongoDB Agentic Evolution Hackathon** (London, May 2025)  
+> PoC built for the **MongoDB Agentic Evolution Hackathon** (London, May 2026)  
 > Theme: **Adaptive Retrieval** — an agentic system that actively modifies its query approach based on input and learns from past performance.
 
 **Live demo:** [https://nhs-policy-navigator.vercel.app](https://nhs-policy-navigator.vercel.app)
