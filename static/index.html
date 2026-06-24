@@ -427,6 +427,123 @@
 
   .no-data { font-size: 12px; color: #aeb7bd; text-align: center; padding: 10px 0; }
 
+  /* ── Query Router digest (right-bottom) ── */
+  .digest-card { border-top: 3px solid #005EB8; }
+  .digest-card h3 { display: flex; align-items: center; gap: 8px; }
+  .digest-card h3 .digest-tag {
+    margin-left: auto;
+    background: #005EB8;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    padding: 2px 7px;
+    border-radius: 9px;
+  }
+  .digest-toggle {
+    display: flex;
+    gap: 3px;
+    background: #e8edee;
+    border-radius: 5px;
+    padding: 3px;
+    margin-bottom: 14px;
+  }
+  .digest-facet-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: #4c6272;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 5px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .digest-facet-btn.active { background: #005EB8; color: white; }
+  .digest-facet-btn:not(.active):hover { background: #d3e0ef; color: #003087; }
+
+  .digest-group { margin-bottom: 14px; }
+  .digest-group:last-child { margin-bottom: 0; }
+  .facet-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 11px;
+    border: 1px solid;
+  }
+  .facet-chip.setting { background: #e8f0fb; color: #005EB8; border-color: #b5d4f4; }
+  .facet-chip.group   { background: #e6f3ec; color: #007f3b; border-color: #9bc8a8; }
+  .facet-chip .facet-count {
+    font-size: 9.5px;
+    font-weight: 700;
+    background: rgba(0,94,184,0.15);
+    border-radius: 7px;
+    padding: 0 5px;
+  }
+  .facet-chip.group .facet-count { background: rgba(0,127,59,0.15); }
+
+  .digest-rows { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .digest-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f7f9fb;
+    border: 1px solid #e3e9ed;
+    border-radius: 5px;
+    padding: 7px 10px;
+  }
+  .digest-row-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 12.5px;
+    color: #212b32;
+    cursor: pointer;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .digest-row-text:hover { color: #005EB8; }
+  .asked-badge {
+    flex-shrink: 0;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: white;
+    background: #768692;
+    border-radius: 8px;
+    padding: 1px 7px;
+  }
+  .rerun-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid #d8dde0;
+    border-radius: 4px;
+    color: #768692;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    padding: 2px 6px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .rerun-btn:hover { background: #005EB8; color: white; border-color: #005EB8; }
+
+  /* Facet chips inside query lists (recent + previous) */
+  .rq-facets { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .rq-facet {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 9px;
+    border: 1px solid;
+  }
+  .rq-facet.setting { background: #e8f0fb; color: #005EB8; border-color: #b5d4f4; }
+  .rq-facet.group   { background: #e6f3ec; color: #007f3b; border-color: #9bc8a8; }
+
   /* ── Previous Queries view ── */
   .previous-view {
     max-width: 1200px;
@@ -438,6 +555,37 @@
     color: #768692;
     margin: -4px 0 16px;
   }
+  .prev-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e8edee;
+  }
+  .prev-filters label { font-size: 12px; color: #4c6272; font-weight: 600; }
+  .prev-filters select {
+    border: 1px solid #aeb7bd;
+    border-radius: 4px;
+    background: white;
+    color: #212b32;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .prev-filters select:focus { outline: none; border-color: #005EB8; }
+  .prev-filters .filter-clear {
+    background: none;
+    border: none;
+    color: #005EB8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 4px;
+  }
+  .prev-filters .filter-clear:hover { text-decoration: underline; }
   #prevList .recent-item { padding: 14px 0; }
   #prevList .rq-text {
     display: block;
@@ -593,6 +741,16 @@
       <div id="recentQueries"><div class="no-data">Ask something to get started</div></div>
     </div>
 
+    <!-- Query Router: deduped, categorised digest of past questions -->
+    <div class="stats-card digest-card">
+      <h3>Past questions by category <span class="digest-tag">ROUTER</span></h3>
+      <div class="digest-toggle">
+        <button type="button" class="digest-facet-btn active" data-facet="setting" onclick="setDigestFacet('setting')">Care setting</button>
+        <button type="button" class="digest-facet-btn" data-facet="group" onclick="setDigestFacet('group')">Professional group</button>
+      </div>
+      <div id="digestContent"><div class="no-data">Ask something to get started</div></div>
+    </div>
+
   </aside>
 
 </div>
@@ -601,7 +759,27 @@
 <div class="previous-view" id="viewPrevious" style="display:none">
   <div class="card">
     <div class="card-title">Previous queries</div>
-    <p class="prev-subtitle">Every question asked of the Policy Navigator, newest first. Click <strong>Copy</strong> to reuse any question.</p>
+    <p class="prev-subtitle">Every question asked of the Policy Navigator, newest first — nothing collapsed here. Click <strong>Copy</strong> to reuse any question.</p>
+    <div class="prev-filters">
+      <label for="prevSetting">Care setting</label>
+      <select id="prevSetting" onchange="loadPreviousQueries(1)">
+        <option value="">All care settings</option>
+        <option value="Acute">Acute</option>
+        <option value="Ambulance">Ambulance</option>
+        <option value="Community">Community</option>
+        <option value="Mental Health and Learning Disability">Mental Health &amp; Learning Disability</option>
+        <option value="Primary Care">Primary Care</option>
+        <option value="Primary Care - Wider Primary Care">Primary Care — Wider Primary Care</option>
+      </select>
+      <label for="prevGroup">Professional group</label>
+      <select id="prevGroup" onchange="loadPreviousQueries(1)">
+        <option value="">All professional groups</option>
+        <option value="Medical">Medical</option>
+        <option value="Clinical non-medical">Clinical non-medical</option>
+        <option value="Dentistry">Dentistry</option>
+      </select>
+      <button type="button" class="filter-clear" onclick="clearPrevFilters()">Clear</button>
+    </div>
     <div id="prevList"><div class="no-data">Loading…</div></div>
     <div class="prev-pagination" id="prevPagination"></div>
   </div>
@@ -651,6 +829,7 @@
       const data = await res.json();
       renderResult(data);
       await loadStats();
+      await loadDigest();
     } catch(e) {
       clearInterval(stepInterval);
       alert("Error: " + e.message);
@@ -803,6 +982,22 @@
   attachQueryListClicks(document.getElementById("recentQueries"));
   attachQueryListClicks(document.getElementById("prevList"));
 
+  // Shorten the long canonical taxonomy labels for compact chips.
+  const FACET_SHORT = {
+    "Mental Health and Learning Disability": "Mental Health & LD",
+    "Primary Care - Wider Primary Care": "Wider Primary Care"
+  };
+  function shortFacet(name) { return FACET_SHORT[name] || name; }
+
+  function facetChipsHtml(r) {
+    const settings = (r.care_settings || []).map(s =>
+      `<span class="rq-facet setting" title="${escapeHtml(s)}">${escapeHtml(shortFacet(s))}</span>`);
+    const groups = (r.professional_groups || []).map(g =>
+      `<span class="rq-facet group" title="${escapeHtml(g)}">${escapeHtml(shortFacet(g))}</span>`);
+    const chips = settings.concat(groups);
+    return chips.length ? `<div class="rq-facets">${chips.join("")}</div>` : "";
+  }
+
   function queryItemHtml(r, withTime) {
     const q = escapeHtml(r.query);
     const score = Number(r.relevance_score || 0).toFixed(1);
@@ -820,8 +1015,74 @@
           ${r.strategy_source === 'learned' ? '<span class="rq-learned">LEARNED</span>' : ''}
           ${when ? `<span class="rq-time">${escapeHtml(when)}</span>` : ''}
         </div>
+        ${facetChipsHtml(r)}
       </div>`;
   }
+
+  // ── Query Router digest (deduped, categorised past questions) ──
+  let digestFacet = "setting";
+
+  function setDigestFacet(facet) {
+    digestFacet = facet;
+    document.querySelectorAll(".digest-facet-btn").forEach(b =>
+      b.classList.toggle("active", b.dataset.facet === facet));
+    loadDigest();
+  }
+
+  async function loadDigest() {
+    const el = document.getElementById("digestContent");
+    try {
+      const res = await fetch(`/api/digest?facet=${digestFacet}`);
+      const data = await res.json();
+      renderDigest(data.groups || []);
+    } catch (e) {
+      console.error("Digest error:", e);
+      el.innerHTML = `<div class="no-data">Could not load digest.</div>`;
+    }
+  }
+
+  function renderDigest(groups) {
+    const el = document.getElementById("digestContent");
+    if (!groups.length) {
+      el.innerHTML = `<div class="no-data">Ask something to get started</div>`;
+      return;
+    }
+    const cls = digestFacet === "setting" ? "setting" : "group";
+    el.innerHTML = groups.map(g => `
+      <div class="digest-group">
+        <span class="facet-chip ${cls}">
+          ${escapeHtml(shortFacet(g.key))}
+          <span class="facet-count">${g.count}</span>
+        </span>
+        <div class="digest-rows">
+          ${g.queries.map(item => {
+            const q = escapeHtml(item.query);
+            return `
+              <div class="digest-row">
+                <div class="digest-row-text" title="${q}" data-query="${q}">${q}</div>
+                ${item.asked_count > 1 ? `<span class="asked-badge">${item.asked_count}×</span>` : ""}
+                <button class="rerun-btn" type="button" title="Re-run this query" aria-label="Re-run this query" data-query="${q}">↻</button>
+              </div>`;
+          }).join("")}
+        </div>
+      </div>`).join("");
+  }
+
+  // Re-run a digest question: drop it into the search box and ask immediately.
+  document.getElementById("digestContent").addEventListener("click", e => {
+    const rerun = e.target.closest(".rerun-btn");
+    if (rerun) {
+      showView("search");
+      setQuery(rerun.dataset.query);
+      ask();
+      return;
+    }
+    const text = e.target.closest(".digest-row-text");
+    if (text) {
+      showView("search");
+      setQuery(text.dataset.query);
+    }
+  });
 
   // ── Tab / view switching ──
   function showView(view) {
@@ -839,12 +1100,18 @@
     const list = document.getElementById("prevList");
     list.innerHTML = `<div class="no-data">Loading…</div>`;
     document.getElementById("prevPagination").innerHTML = "";
+    const setting = document.getElementById("prevSetting").value;
+    const group = document.getElementById("prevGroup").value;
+    let url = `/api/queries?page=${page}&per_page=${PREV_PER_PAGE}`;
+    if (setting) url += `&setting=${encodeURIComponent(setting)}`;
+    if (group) url += `&group=${encodeURIComponent(group)}`;
     try {
-      const res = await fetch(`/api/queries?page=${page}&per_page=${PREV_PER_PAGE}`);
+      const res = await fetch(url);
       const data = await res.json();
       const queries = data.queries || [];
       if (queries.length === 0) {
-        list.innerHTML = `<div class="no-data">No queries have been asked yet.</div>`;
+        const filtered = setting || group;
+        list.innerHTML = `<div class="no-data">${filtered ? "No queries match these filters." : "No queries have been asked yet."}</div>`;
         return;
       }
       list.innerHTML = queries.map(r => queryItemHtml(r, true)).join("");
@@ -855,6 +1122,12 @@
     }
   }
 
+  function clearPrevFilters() {
+    document.getElementById("prevSetting").value = "";
+    document.getElementById("prevGroup").value = "";
+    loadPreviousQueries(1);
+  }
+
   function renderPrevPagination(data) {
     const page = data.page, totalPages = data.total_pages, total = data.total;
     document.getElementById("prevPagination").innerHTML = `
@@ -863,9 +1136,10 @@
       <button class="prev-btn" ${page >= totalPages ? "disabled" : ""} onclick="loadPreviousQueries(${page + 1})">Next →</button>`;
   }
 
-  // Load stats on page load and auto-refresh
+  // Load stats + digest on page load and auto-refresh
   loadStats();
-  setInterval(loadStats, 30000);
+  loadDigest();
+  setInterval(() => { loadStats(); loadDigest(); }, 30000);
 
   // Enter key support
   document.getElementById("queryInput").addEventListener("keydown", e => {

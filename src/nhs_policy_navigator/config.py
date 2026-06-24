@@ -31,6 +31,7 @@ class Settings:
         google_api_key: Google AI Studio (Gemini) API key.
         chunks_collection: Collection holding embedded source chunks.
         log_collection: Collection holding the per-query decision log.
+        digest_collection: Collection holding deduped, categorised query clusters.
         embedding_model: Gemini embedding model identifier.
         embedding_dimensions: Vector dimensions produced by the model.
         generate_models: Ordered fallback list of Gemini generation models.
@@ -45,6 +46,7 @@ class Settings:
     db_name: str = "agentic-evolution-hackathon"
     chunks_collection: str = "nhs_chunks"
     log_collection: str = "query_log"
+    digest_collection: str = "query_digest"
     embedding_model: str = "gemini-embedding-001"
     embedding_dimensions: int = 768
     generate_models: tuple[str, ...] = (

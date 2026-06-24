@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format is based
 on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Query Router** (`router.py`): every query is now tagged with NHS-domain
+  facets — a *care setting* (Acute, Ambulance, Community, Mental Health and
+  Learning Disability, Primary Care, Primary Care – Wider Primary Care) and a
+  *professional group* (Medical, Clinical non-medical, Dentistry) — using the
+  existing Gemini wrapper. Tagging is multi-label, so one query can surface
+  under several domains.
+- **Deduplicated digest**: near-identical questions (cosine ≥ 0.92 on the query
+  embedding) are collapsed into a single `query_digest` cluster carrying an
+  "asked N×" counter, surfaced on the main page's right-bottom panel with a
+  care-setting ⇄ professional-group toggle and a re-run control.
+- **`GET /api/digest`** endpoint returning the deduped clusters grouped by the
+  chosen facet; **`GET /api/queries`** gains `setting` / `group` filters while
+  remaining the complete, append-only history (nothing collapsed).
+- Unit tests for facet parsing, cosine similarity, dedup routing and digest
+  grouping (`tests/test_router.py`).
+
 ## [1.0.0] - 2026-06-24
 
 ### Added
