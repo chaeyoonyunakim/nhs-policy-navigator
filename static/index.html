@@ -152,31 +152,6 @@
   .btn-primary:hover { background: #003087; border-color: #003087; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .example-queries {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 14px;
-    align-items: center;
-  }
-  .example-queries span {
-    font-size: 12px;
-    color: #768692;
-    font-weight: 500;
-  }
-  .pill {
-    font-size: 12px;
-    background: #e8edee;
-    color: #005EB8;
-    padding: 4px 12px;
-    border-radius: 3px;
-    cursor: pointer;
-    border: 1px solid #d8dde0;
-    transition: background 0.15s;
-    font-weight: 500;
-  }
-  .pill:hover { background: #005EB8; color: white; border-color: #005EB8; }
-
   /* ── Loading ── */
   .loading {
     display: none;
@@ -350,27 +325,6 @@
   }
   .total-count .num { font-size: 36px; font-weight: 600; color: #005EB8; line-height: 1; }
   .total-count .lbl { font-size: 12px; color: #768692; margin-top: 4px; }
-
-  .strategy-bar { margin-bottom: 12px; }
-  .strategy-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: #4c6272;
-    margin-bottom: 5px;
-    font-weight: 500;
-  }
-  .bar-bg {
-    background: #e8edee;
-    border-radius: 2px;
-    height: 5px;
-  }
-  .bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: #005EB8;
-    transition: width 0.6s ease;
-  }
 
   .recent-item {
     padding: 10px 0;
@@ -686,14 +640,6 @@
         <textarea id="queryInput" placeholder="e.g. What are the NHS targets for GP access by 2028?"></textarea>
         <button class="btn-primary" id="askBtn" onclick="ask()">Search</button>
       </div>
-      <div class="example-queries">
-        <span>Try:</span>
-        <div class="pill" onclick="setQuery('What are the 3 radical shifts in the NHS plan?')">3 radical shifts</div>
-        <div class="pill" onclick="setQuery('What does the plan say about AI in the NHS?')">AI strategy</div>
-        <div class="pill" onclick="setQuery('How does hospital care compare to community care in the plan?')">Hospital vs community</div>
-        <div class="pill" onclick="setQuery('What does the plan say about health inequalities in deprived areas?')">Health inequalities</div>
-        <div class="pill" onclick="setQuery('Does the plan address mental health in prisons?')">Gap: prison mental health</div>
-      </div>
     </div>
 
     <!-- Loading -->
@@ -737,16 +683,6 @@
         <div class="num" id="totalCount">—</div>
         <div class="lbl">total queries</div>
       </div>
-    </div>
-
-    <div class="stats-card">
-      <h3>Strategy performance</h3>
-      <div id="strategyBars"><div class="no-data">No data yet</div></div>
-    </div>
-
-    <div class="stats-card">
-      <h3>Query type distribution</h3>
-      <div id="typeBars"><div class="no-data">No data yet</div></div>
     </div>
 
     <!-- Query Router: deduped, categorised digest of past questions -->
@@ -918,32 +854,6 @@
       const res = await fetch("/api/stats");
       const data = await res.json();
       document.getElementById("totalCount").textContent = data.total_queries;
-
-      const stratPerf = data.strategy_performance || [];
-      if (stratPerf.length > 0) {
-        const maxScore = Math.max(...stratPerf.map(s => s.avg_score));
-        document.getElementById("strategyBars").innerHTML = stratPerf.map(s => `
-          <div class="strategy-bar">
-            <div class="strategy-label">
-              <span>${s._id.replace(/_/g,' ')}</span>
-              <span>${s.avg_score.toFixed(1)}/5 (${s.count})</span>
-            </div>
-            <div class="bar-bg"><div class="bar-fill" style="width:${(s.avg_score/5)*100}%"></div></div>
-          </div>`).join("");
-      }
-
-      const typePerf = data.type_performance || [];
-      if (typePerf.length > 0) {
-        const maxCount = Math.max(...typePerf.map(t => t.count));
-        document.getElementById("typeBars").innerHTML = typePerf.map(t => `
-          <div class="strategy-bar">
-            <div class="strategy-label">
-              <span>${t._id}</span>
-              <span>${t.count} queries</span>
-            </div>
-            <div class="bar-bg"><div class="bar-fill" style="width:${(t.count/maxCount)*100}%"></div></div>
-          </div>`).join("");
-      }
     } catch(e) {
       console.error("Stats error:", e);
     }
