@@ -16,8 +16,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   under several domains.
 - **Deduplicated digest**: near-identical questions (cosine ≥ 0.92 on the query
   embedding) are collapsed into a single `query_digest` cluster carrying an
-  "asked N×" counter, surfaced on the main page's right-bottom panel with a
-  care-setting ⇄ professional-group toggle and a re-run control.
+  "asked N×" counter, surfaced on the main page's right-bottom panel as the
+  **top 10 most-asked** questions per category, with a care-setting ⇄
+  professional-group toggle and a re-run control.
 - **`GET /api/digest`** endpoint returning the deduped clusters grouped by the
   chosen facet; **`GET /api/queries`** gains `setting` / `group` filters while
   remaining the complete, append-only history (nothing collapsed).

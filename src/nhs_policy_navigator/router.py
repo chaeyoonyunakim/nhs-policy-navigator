@@ -237,14 +237,18 @@ def route_to_digest(
 _FACET_FIELD = {"setting": "care_settings", "group": "professional_groups"}
 _FACET_KEYS = {"setting": CARE_SETTINGS, "group": PROFESSIONAL_GROUPS}
 
+# Most-asked deduplicated questions shown per category in the main-page digest.
+DIGEST_TOP_N = 10
+
 
 def build_digest(facet: str, digest_col: Collection) -> dict:
     """Group deduped clusters by the chosen ``facet`` for the main-page digest.
 
     ``facet`` is ``"setting"`` (care setting) or ``"group"`` (professional
     group). Because tagging is multi-label, a cluster appears under every tag it
-    carries. Within each group, the most-asked questions come first. Empty
-    groups are omitted; the embedding is never returned to the client.
+    carries. Within each group the most-asked questions come first, capped at
+    the top :data:`DIGEST_TOP_N`. Empty groups are omitted; the embedding is
+    never returned to the client.
     """
     if facet not in _FACET_FIELD:
         facet = "setting"
@@ -277,13 +281,11 @@ def build_digest(facet: str, digest_col: Collection) -> dict:
             if tag in buckets:
                 buckets[tag].append(entry)
 
-    groups = [
-        {
-            "key": key,
-            "count": len(entries),
-            "queries": sorted(entries, key=lambda e: (e["asked_count"], e["best_score"]), reverse=True),
-        }
-        for key, entries in buckets.items()
-        if entries
-    ]
+    groups = []
+    for key, entries in buckets.items():
+        if not entries:
+            continue
+        ranked = sorted(entries, key=lambda e: (e["asked_count"], e["best_score"]), reverse=True)
+        top = ranked[:DIGEST_TOP_N]
+        groups.append({"key": key, "count": len(top), "total": len(entries), "queries": top})
     return {"facet": facet, "groups": groups}

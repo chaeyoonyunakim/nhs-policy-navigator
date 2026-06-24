@@ -58,7 +58,8 @@ Alongside retrieval, `router.py` categorises and de-duplicates questions:
   wrapper. Tags are logged on every `query_log` row.
 - **Dedup digest** (`route_to_digest`) — near-identical questions (cosine ≥ 0.92
   on the query embedding) collapse into one `query_digest` cluster with an
-  "asked N×" counter; `build_digest` groups clusters by the chosen facet.
+  "asked N×" counter; `build_digest` groups clusters by the chosen facet and
+  returns the top 10 most-asked questions per category.
 
 Tagging and routing degrade gracefully — a failure never blocks an answer. The
 main page shows the deduped digest; the Previous Queries tab shows the full,
