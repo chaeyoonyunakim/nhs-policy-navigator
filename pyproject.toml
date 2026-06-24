@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nhs-policy-navigator"
+version = "1.0.0"
+description = "Adaptive multi-source retrieval agent over the NHS 10 Year Health Plan."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Chaeyoon Kim" }]
+keywords = ["nhs", "rag", "retrieval", "rap", "mongodb", "gemini"]
+dependencies = [
+    "pymongo[srv]>=4.6.0",
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "pypdf>=4.0.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.26.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "black>=24.0.0",
+    "ruff>=0.3.0",
+    "pre-commit>=3.6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/chaeyoonyunakim/nhs-policy-navigator"
+"Live demo" = "https://nhs-policy-navigator.vercel.app"
+
+[project.scripts]
+nhs-ingest = "nhs_policy_navigator.pipeline.ingest:main"
+nhs-reembed = "nhs_policy_navigator.pipeline.reembed:main"
+nhs-export-db = "nhs_policy_navigator.pipeline.export_db:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 110
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+ignore = ["B008"]  # FastAPI uses callables in argument defaults
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"

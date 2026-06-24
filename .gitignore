@@ -6,3 +6,16 @@ __pycache__/
 *.pdf
 mongodb-setup.png
 .vercel
+
+# Build / packaging artefacts
+build/
+dist/
+*.egg-info/
+src/*.egg-info/
+
+# Test / lint caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
