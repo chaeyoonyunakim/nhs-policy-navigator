@@ -17,6 +17,7 @@ from pymongo import MongoClient
 from .agent import adaptive_retrieve
 from .config import get_settings
 from .logging_config import get_logger
+from .router import build_digest
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -25,6 +26,7 @@ mongo = MongoClient(settings.mongodb_uri)
 db = mongo[settings.db_name]
 chunks_col = db[settings.chunks_collection]
 log_col = db[settings.log_collection]
+digest_col = db[settings.digest_collection]
 
 logger.info("Startup complete; connected to database %s", settings.db_name)
 
@@ -43,7 +45,9 @@ async def query_endpoint(request: QueryRequest) -> dict:
     """Run the adaptive retrieval pipeline for a single query."""
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
-    return adaptive_retrieve(query=request.query, chunks_col=chunks_col, log_col=log_col)
+    return adaptive_retrieve(
+        query=request.query, chunks_col=chunks_col, log_col=log_col, digest_col=digest_col
+    )
 
 
 @app.get("/api/stats")
@@ -86,6 +90,8 @@ async def stats_endpoint() -> dict:
                 "strategy": 1,
                 "relevance_score": 1,
                 "strategy_source": 1,
+                "care_settings": 1,
+                "professional_groups": 1,
                 "_id": 0,
             },
         )
@@ -101,21 +107,37 @@ async def stats_endpoint() -> dict:
 
 
 @app.get("/api/queries")
-async def queries_endpoint(page: int = 1, per_page: int = 10) -> dict:
-    """Return a paginated history of every query asked, newest first."""
+async def queries_endpoint(
+    page: int = 1,
+    per_page: int = 10,
+    setting: str | None = None,
+    group: str | None = None,
+) -> dict:
+    """Return a paginated history of every query asked, newest first.
+
+    The append-only log is never collapsed here -- ``setting`` and ``group``
+    only *filter* the full history by NHS care setting or professional group.
+    """
     per_page = max(1, min(per_page, 50))
-    total = log_col.count_documents({})
+    query_filter: dict = {}
+    if setting:
+        query_filter["care_settings"] = setting
+    if group:
+        query_filter["professional_groups"] = group
+    total = log_col.count_documents(query_filter)
     total_pages = max(1, (total + per_page - 1) // per_page)
     page = max(1, min(page, total_pages))
     docs = list(
         log_col.find(
-            {},
+            query_filter,
             {
                 "query": 1,
                 "query_type": 1,
                 "strategy": 1,
                 "relevance_score": 1,
                 "strategy_source": 1,
+                "care_settings": 1,
+                "professional_groups": 1,
                 "timestamp": 1,
                 "_id": 0,
             },
@@ -135,6 +157,17 @@ async def queries_endpoint(page: int = 1, per_page: int = 10) -> dict:
         "per_page": per_page,
         "total_pages": total_pages,
     }
+
+
+@app.get("/api/digest")
+async def digest_endpoint(facet: str = "setting") -> dict:
+    """Return deduped past questions grouped by NHS domain for the main page.
+
+    ``facet`` selects the grouping: ``setting`` (care setting) or ``group``
+    (professional group). Duplicates are collapsed into one cluster carrying an
+    ``asked_count``; the full, ungrouped history stays on ``/api/queries``.
+    """
+    return build_digest(facet, digest_col)
 
 
 @app.get("/api/health")

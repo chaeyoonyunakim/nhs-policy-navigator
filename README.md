@@ -32,7 +32,9 @@ For every query, the agent:
 6. **Generates a grounded answer** with source-aware citations (plan pages + live sources where relevant)
 7. **Self-evaluates** result quality (1–5 score) and **logs everything back to MongoDB**, enabling future adaptation
 
-The UI also surfaces live news/publication cards and shows strategy performance + query history from MongoDB, making adaptation visible in real time. A dedicated **Previous Queries** tab browses the full query history (paginated, 10 per page), and any past question — in the sidebar or that tab — can be copied for reuse.
+The UI also surfaces live news/publication cards and shows strategy performance + query history from MongoDB, making adaptation visible in real time. A dedicated **Previous Queries** tab browses the full query history (paginated, 10 per page, filterable by care setting / professional group), and any past question — in the sidebar or that tab — can be copied for reuse.
+
+A **Query Router** runs alongside retrieval. It tags every query (multi-label) with a **care setting** and a **professional group** from a fixed NHS taxonomy, using the same Gemini wrapper. Near-identical questions (cosine ≥ 0.92) are **deduplicated** into clusters with an "asked N×" counter. The main page shows these as a categorised **digest** — the top 10 most-asked per category, via `GET /api/digest` — while the Previous Queries tab keeps the full, append-only log.
 
 ---
 
@@ -244,7 +246,8 @@ conventions.
 │   ├── logging_config.py  # Structured logging setup
 │   ├── gemini.py          # Gemini REST API wrapper (embed + generate, no SDK)
 │   ├── agent.py           # Core multi-source adaptive retrieval logic
-│   ├── app.py             # FastAPI backend (query, stats, queries, health)
+│   ├── router.py          # Query Router — facet tagging, dedup & digest
+│   ├── app.py             # FastAPI backend (query, stats, queries, digest, health)
 │   └── pipeline/
 │       ├── ingest.py      # PDF ingestion + MongoDB index creation
 │       ├── reembed.py     # Re-embed existing docs (e.g. after model change)
