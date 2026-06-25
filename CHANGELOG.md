@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-25
+
 ### Added
 
 - **Query Router** (`router.py`): every query is now tagged with NHS-domain
