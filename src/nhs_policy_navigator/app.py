@@ -30,7 +30,7 @@ digest_col = db[settings.digest_collection]
 
 logger.info("Startup complete; connected to database %s", settings.db_name)
 
-app = FastAPI(title="NHS Policy Navigator", version="1.0.0")
+app = FastAPI(title="NHS Policy Navigator", version="1.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
