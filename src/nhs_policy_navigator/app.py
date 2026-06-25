@@ -52,58 +52,13 @@ async def query_endpoint(request: QueryRequest) -> dict:
 
 @app.get("/api/stats")
 async def stats_endpoint() -> dict:
-    """Return strategy performance, query-type distribution and recent queries."""
-    strategy_perf = list(
-        log_col.aggregate(
-            [
-                {
-                    "$group": {
-                        "_id": "$strategy",
-                        "avg_score": {"$avg": "$relevance_score"},
-                        "count": {"$sum": 1},
-                    }
-                },
-                {"$sort": {"avg_score": -1}},
-            ]
-        )
-    )
-    type_perf = list(
-        log_col.aggregate(
-            [
-                {
-                    "$group": {
-                        "_id": "$query_type",
-                        "avg_score": {"$avg": "$relevance_score"},
-                        "count": {"$sum": 1},
-                    }
-                },
-                {"$sort": {"count": -1}},
-            ]
-        )
-    )
-    recent = list(
-        log_col.find(
-            {},
-            {
-                "query": 1,
-                "query_type": 1,
-                "strategy": 1,
-                "relevance_score": 1,
-                "strategy_source": 1,
-                "care_settings": 1,
-                "professional_groups": 1,
-                "_id": 0,
-            },
-        )
-        .sort("timestamp", -1)
-        .limit(8)
-    )
-    return {
-        "total_queries": log_col.count_documents({}),
-        "strategy_performance": strategy_perf,
-        "type_performance": type_perf,
-        "recent_queries": recent,
-    }
+    """Return the total number of queries processed.
+
+    The agent still learns from per-strategy and per-type performance (read
+    directly from ``query_log`` in the pipeline); this endpoint now powers only
+    the main-page "Queries processed" counter.
+    """
+    return {"total_queries": log_col.count_documents({})}
 
 
 @app.get("/api/queries")

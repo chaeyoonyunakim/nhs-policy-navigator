@@ -32,7 +32,7 @@ For every query, the agent:
 6. **Generates a grounded answer** with source-aware citations (plan pages + live sources where relevant)
 7. **Self-evaluates** result quality (1–5 score) and **logs everything back to MongoDB**, enabling future adaptation
 
-The UI also surfaces live news/publication cards and shows strategy performance + query history from MongoDB, making adaptation visible in real time. A dedicated **Previous Queries** tab browses the full query history (paginated, 10 per page, filterable by care setting / professional group), and any past question — in the sidebar or that tab — can be copied for reuse.
+The UI also surfaces live news/publication cards and a **"This query"** panel that explains the agent's choices for the latest answer in plain English — query type, sources searched, retrieval strategy, whether that strategy was the default or learned, and the self-rated relevance score. The running total of queries processed sits on the Query Router digest. A dedicated **Previous Queries** tab browses the full query history (paginated, 10 per page, filterable by care setting / professional group), and any past question can be copied for reuse.
 
 A **Query Router** runs alongside retrieval. It tags every query (multi-label) with a **care setting** and a **professional group** from a fixed NHS taxonomy, using the same Gemini wrapper. Near-identical questions (cosine ≥ 0.92) are **deduplicated** into clusters with an "asked N×" counter. The main page shows these as a categorised **digest** — the top 10 most-asked per category, via `GET /api/digest` — while the Previous Queries tab keeps the full, append-only log.
 
@@ -312,7 +312,7 @@ Observability is built in and requires no external platform. Every query is logg
 - Strategy selection (default vs. learned from data) and relevance/self-evaluation score
 - Sources queried and counts of live news / publications fetched
 
-The UI makes this visible in real time — strategy performance, query-type distribution, and the browsable **Previous Queries** history all read directly from MongoDB, so you can watch the agent adapt without any third-party tracing service.
+The UI surfaces this directly from MongoDB — the Query Router **digest** (deduped questions by NHS category) and the browsable **Previous Queries** history (the full, filterable log) — so you can review what has been asked and how it was handled without any third-party tracing service. Per-strategy and per-type performance remain in `query_log` and drive the agent's learning.
 
 ---
 

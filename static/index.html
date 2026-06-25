@@ -152,31 +152,6 @@
   .btn-primary:hover { background: #003087; border-color: #003087; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .example-queries {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 14px;
-    align-items: center;
-  }
-  .example-queries span {
-    font-size: 12px;
-    color: #768692;
-    font-weight: 500;
-  }
-  .pill {
-    font-size: 12px;
-    background: #e8edee;
-    color: #005EB8;
-    padding: 4px 12px;
-    border-radius: 3px;
-    cursor: pointer;
-    border: 1px solid #d8dde0;
-    transition: background 0.15s;
-    font-weight: 500;
-  }
-  .pill:hover { background: #005EB8; color: white; border-color: #005EB8; }
-
   /* ── Loading ── */
   .loading {
     display: none;
@@ -344,33 +319,21 @@
     border-bottom: 1px solid #e8edee;
   }
 
-  .total-count {
-    text-align: center;
-    padding: 12px 0 6px;
+  /* ── This-query metrics legend ── */
+  .metric-row { padding: 9px 0; border-bottom: 1px solid #eef1f3; }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-head { display: flex; align-items: center; gap: 8px; }
+  .metric-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #768692;
+    min-width: 66px;
   }
-  .total-count .num { font-size: 36px; font-weight: 600; color: #005EB8; line-height: 1; }
-  .total-count .lbl { font-size: 12px; color: #768692; margin-top: 4px; }
-
-  .strategy-bar { margin-bottom: 12px; }
-  .strategy-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: #4c6272;
-    margin-bottom: 5px;
-    font-weight: 500;
-  }
-  .bar-bg {
-    background: #e8edee;
-    border-radius: 2px;
-    height: 5px;
-  }
-  .bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: #005EB8;
-    transition: width 0.6s ease;
-  }
+  .metric-desc { font-size: 12px; color: #4c6272; margin-top: 5px; line-height: 1.45; }
+  .tag-score { background: #eef1f4; color: #4c6272; border-color: #cdd7de; }
+  .digest-tag.total-tag { background: #768692; }
 
   .recent-item {
     padding: 10px 0;
@@ -463,6 +426,19 @@
   }
   .digest-facet-btn.active { background: #005EB8; color: white; }
   .digest-facet-btn:not(.active):hover { background: #d3e0ef; color: #003087; }
+
+  .digest-viewall {
+    display: block;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #e8edee;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #005EB8;
+    text-decoration: none;
+    text-align: right;
+  }
+  .digest-viewall:hover { color: #003087; text-decoration: underline; }
 
   .digest-group { margin-bottom: 14px; }
   .digest-group:last-child { margin-bottom: 0; }
@@ -673,14 +649,6 @@
         <textarea id="queryInput" placeholder="e.g. What are the NHS targets for GP access by 2028?"></textarea>
         <button class="btn-primary" id="askBtn" onclick="ask()">Search</button>
       </div>
-      <div class="example-queries">
-        <span>Try:</span>
-        <div class="pill" onclick="setQuery('What are the 3 radical shifts in the NHS plan?')">3 radical shifts</div>
-        <div class="pill" onclick="setQuery('What does the plan say about AI in the NHS?')">AI strategy</div>
-        <div class="pill" onclick="setQuery('How does hospital care compare to community care in the plan?')">Hospital vs community</div>
-        <div class="pill" onclick="setQuery('What does the plan say about health inequalities in deprived areas?')">Health inequalities</div>
-        <div class="pill" onclick="setQuery('Does the plan address mental health in prisons?')">Gap: prison mental health</div>
-      </div>
     </div>
 
     <!-- Loading -->
@@ -719,36 +687,19 @@
   <aside class="stats-panel">
 
     <div class="stats-card">
-      <h3>Queries processed</h3>
-      <div class="total-count">
-        <div class="num" id="totalCount">—</div>
-        <div class="lbl">total queries</div>
-      </div>
-    </div>
-
-    <div class="stats-card">
-      <h3>Strategy performance</h3>
-      <div id="strategyBars"><div class="no-data">No data yet</div></div>
-    </div>
-
-    <div class="stats-card">
-      <h3>Query type distribution</h3>
-      <div id="typeBars"><div class="no-data">No data yet</div></div>
-    </div>
-
-    <div class="stats-card">
-      <h3>Recent queries</h3>
-      <div id="recentQueries"><div class="no-data">Ask something to get started</div></div>
+      <h3>This query</h3>
+      <div id="queryMetrics"><div class="no-data">Run a search to see how it was answered.</div></div>
     </div>
 
     <!-- Query Router: deduped, categorised digest of past questions -->
     <div class="stats-card digest-card">
-      <h3>Past questions by category <span class="digest-tag">ROUTER</span></h3>
+      <h3>Past questions by category <span class="digest-tag total-tag" id="totalCount" title="Total queries processed">—</span></h3>
       <div class="digest-toggle">
         <button type="button" class="digest-facet-btn active" data-facet="setting" onclick="setDigestFacet('setting')">Care setting</button>
         <button type="button" class="digest-facet-btn" data-facet="group" onclick="setDigestFacet('group')">Professional group</button>
       </div>
       <div id="digestContent"><div class="no-data">Ask something to get started</div></div>
+      <a href="#" class="digest-viewall" onclick="showView('previous'); return false;">View all previous queries →</a>
     </div>
 
   </aside>
@@ -865,6 +816,48 @@
     }
     document.getElementById("metaRow").innerHTML = meta;
 
+    // "This query" legend: each selected metric with a plain-English description.
+    const typeDesc = {
+      factual: "a specific fact, figure, target or date",
+      conceptual: "themes, strategies or how something works",
+      comparative: "comparing two or more things",
+      gap_analysis: "what's missing or not addressed in the plan"
+    };
+    const stratDesc = {
+      text_search: "keyword / full-text match",
+      vector_search: "semantic similarity using embeddings",
+      hybrid_search: "keyword and semantic search, combined"
+    };
+    const sourceLabel = { plan: "NHS Plan", news: "Live News", publications: "Publications" };
+    const sourcesText = sources.map(s => sourceLabel[s] || s).join(" + ");
+    const learned = data.strategy_source === "learned";
+    const score = Number(data.relevance_score || 0).toFixed(1);
+
+    const metricRow = (label, chipHtml, desc) => `
+      <div class="metric-row">
+        <div class="metric-head"><span class="metric-label">${label}</span>${chipHtml}</div>
+        <div class="metric-desc">${desc}</div>
+      </div>`;
+
+    document.getElementById("queryMetrics").innerHTML =
+      metricRow("Type",
+        `<span class="tag tag-type">${typeLabel[data.query_type] || data.query_type}</span>`,
+        typeDesc[data.query_type] || "how the question was classified") +
+      metricRow("Sources",
+        `<span class="tag tag-plan">${escapeHtml(sourcesText)}</span>`,
+        "which corpora were searched for this query type") +
+      metricRow("Strategy",
+        `<span class="tag ${stratClass[data.strategy] || 'tag-vector'}">${stratLabel[data.strategy] || data.strategy}</span>`,
+        stratDesc[data.strategy] || "how it searched the NHS plan") +
+      metricRow("Selection",
+        `<span class="tag ${learned ? 'tag-learned' : 'tag-type'}">${learned ? '&#129504; Learned' : 'Default'}</span>`,
+        learned
+          ? "strategy chosen from past performance (5+ prior queries of this type)"
+          : "preset default strategy for this query type") +
+      metricRow("Relevance",
+        `<span class="tag tag-score">${score}/5</span>`,
+        "the agent's self-rated quality of the retrieved context");
+
     document.getElementById("answerText").textContent = data.answer;
 
     // Plan sources with rerank score
@@ -909,38 +902,6 @@
       const res = await fetch("/api/stats");
       const data = await res.json();
       document.getElementById("totalCount").textContent = data.total_queries;
-
-      const stratPerf = data.strategy_performance || [];
-      if (stratPerf.length > 0) {
-        const maxScore = Math.max(...stratPerf.map(s => s.avg_score));
-        document.getElementById("strategyBars").innerHTML = stratPerf.map(s => `
-          <div class="strategy-bar">
-            <div class="strategy-label">
-              <span>${s._id.replace(/_/g,' ')}</span>
-              <span>${s.avg_score.toFixed(1)}/5 (${s.count})</span>
-            </div>
-            <div class="bar-bg"><div class="bar-fill" style="width:${(s.avg_score/5)*100}%"></div></div>
-          </div>`).join("");
-      }
-
-      const typePerf = data.type_performance || [];
-      if (typePerf.length > 0) {
-        const maxCount = Math.max(...typePerf.map(t => t.count));
-        document.getElementById("typeBars").innerHTML = typePerf.map(t => `
-          <div class="strategy-bar">
-            <div class="strategy-label">
-              <span>${t._id}</span>
-              <span>${t.count} queries</span>
-            </div>
-            <div class="bar-bg"><div class="bar-fill" style="width:${(t.count/maxCount)*100}%"></div></div>
-          </div>`).join("");
-      }
-
-      const recent = data.recent_queries || [];
-      if (recent.length > 0) {
-        document.getElementById("recentQueries").innerHTML =
-          recent.map(r => queryItemHtml(r, false)).join("");
-      }
     } catch(e) {
       console.error("Stats error:", e);
     }
@@ -979,7 +940,6 @@
       if (textEl) textEl.classList.toggle("expanded");
     });
   }
-  attachQueryListClicks(document.getElementById("recentQueries"));
   attachQueryListClicks(document.getElementById("prevList"));
 
   // Shorten the long canonical taxonomy labels for compact chips.
