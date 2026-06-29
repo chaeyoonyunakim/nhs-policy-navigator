@@ -9,10 +9,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - **Query Router** (`router.py`): every query is now tagged with NHS-domain
-  facets — a *care setting* (Acute, Ambulance, Community, Mental Health and
-  Learning Disability, Primary Care, Primary Care – Wider Primary Care) and a
-  *professional group* (Medical, Clinical non-medical, Dentistry) — using the
-  existing Gemini wrapper. Tagging is multi-label, so one query can surface
+  facets — a *care setting* (Secondary care, Primary care, Wider Primary care)
+  and a *professional group* (Medical, Clinical non-medical, Dentistry) — using
+  the existing Gemini wrapper. Tagging is multi-label, so one query can surface
   under several domains.
 - **Deduplicated digest**: near-identical questions (cosine ≥ 0.92 on the query
   embedding) are collapsed into a single `query_digest` cluster carrying an

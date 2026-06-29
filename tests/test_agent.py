@@ -148,7 +148,7 @@ def test_evaluate_relevance_defaults_on_error(monkeypatch: pytest.MonkeyPatch) -
 def test_adaptive_retrieve_logs_and_returns(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(agent, "classify_query", lambda _q: "factual")
     monkeypatch.setattr(
-        agent, "tag_facets", lambda _q: {"care_settings": ["Acute"], "professional_groups": ["Medical"]}
+        agent, "tag_facets", lambda _q: {"care_settings": ["Secondary care"], "professional_groups": ["Medical"]}
     )
     monkeypatch.setattr(agent, "_retrieve", lambda *_a: [{"text": "chunk", "source": "full_plan", "page": 1}])
     monkeypatch.setattr(agent, "rerank_chunks", lambda _q, chunks: chunks)
@@ -161,17 +161,17 @@ def test_adaptive_retrieve_logs_and_returns(monkeypatch: pytest.MonkeyPatch) -> 
     assert result["query_type"] == "factual"
     assert result["strategy_source"] == "default"
     assert result["answer"] == "answer"
-    assert result["care_settings"] == ["Acute"]
+    assert result["care_settings"] == ["Secondary care"]
     assert result["professional_groups"] == ["Medical"]
     assert len(log_col.inserted) == 1
     assert log_col.inserted[0]["relevance_score"] == 4.0
-    assert log_col.inserted[0]["care_settings"] == ["Acute"]
+    assert log_col.inserted[0]["care_settings"] == ["Secondary care"]
 
 
 def test_adaptive_retrieve_routes_to_digest(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(agent, "classify_query", lambda _q: "factual")
     monkeypatch.setattr(
-        agent, "tag_facets", lambda _q: {"care_settings": ["Acute"], "professional_groups": []}
+        agent, "tag_facets", lambda _q: {"care_settings": ["Secondary care"], "professional_groups": []}
     )
     monkeypatch.setattr(agent, "_retrieve", lambda *_a: [{"text": "chunk", "source": "full_plan", "page": 1}])
     monkeypatch.setattr(agent, "rerank_chunks", lambda _q, chunks: chunks)
@@ -184,4 +184,4 @@ def test_adaptive_retrieve_routes_to_digest(monkeypatch: pytest.MonkeyPatch) -> 
 
     assert len(digest_col.inserted) == 1
     assert digest_col.inserted[0]["asked_count"] == 1
-    assert digest_col.inserted[0]["care_settings"] == ["Acute"]
+    assert digest_col.inserted[0]["care_settings"] == ["Secondary care"]
