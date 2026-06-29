@@ -15,23 +15,23 @@ from tests.conftest import FakeCollection
 
 
 def test_parse_facet_response_extracts_valid_tags() -> None:
-    raw = "CARE: Acute, Mental Health and Learning Disability\nGROUP: Medical"
+    raw = "CARE: Secondary care, Primary care\nGROUP: Medical"
     parsed = router._parse_facet_response(raw)
-    assert parsed["care_settings"] == ["Acute", "Mental Health and Learning Disability"]
+    assert parsed["care_settings"] == ["Secondary care", "Primary care"]
     assert parsed["professional_groups"] == ["Medical"]
 
 
 def test_parse_facet_response_drops_unknown_and_dedupes() -> None:
-    raw = "CARE: Acute, Acute, Wizardry\nGROUP: NONE"
+    raw = "CARE: Secondary care, Secondary care, Wizardry\nGROUP: NONE"
     parsed = router._parse_facet_response(raw)
-    assert parsed["care_settings"] == ["Acute"]
+    assert parsed["care_settings"] == ["Secondary care"]
     assert parsed["professional_groups"] == []
 
 
 def test_parse_facet_response_is_case_insensitive() -> None:
     raw = "care: primary care\ngroup: dentistry"
     parsed = router._parse_facet_response(raw)
-    assert parsed["care_settings"] == ["Primary Care"]
+    assert parsed["care_settings"] == ["Primary care"]
     assert parsed["professional_groups"] == ["Dentistry"]
 
 
@@ -81,7 +81,7 @@ def test_find_duplicate_returns_none_when_all_below_threshold() -> None:
 
 def test_route_to_digest_adds_new_cluster() -> None:
     digest = FakeCollection()
-    facets = {"care_settings": ["Acute"], "professional_groups": ["Medical"]}
+    facets = {"care_settings": ["Secondary care"], "professional_groups": ["Medical"]}
     router.route_to_digest("waiting times?", [1.0, 0.0], facets, 4.0, "text_search", digest)
     assert len(digest.inserted) == 1
     assert digest.inserted[0]["asked_count"] == 1
@@ -95,14 +95,14 @@ def test_route_to_digest_bumps_existing_cluster() -> None:
                 "_id": 1,
                 "canonical_query": "GP access targets?",
                 "embedding": [1.0, 0.0],
-                "care_settings": ["Primary Care"],
+                "care_settings": ["Primary care"],
                 "professional_groups": [],
                 "asked_count": 2,
                 "best_score": 3.0,
             }
         ]
     )
-    facets = {"care_settings": ["Primary Care"], "professional_groups": ["Medical"]}
+    facets = {"care_settings": ["Primary care"], "professional_groups": ["Medical"]}
     router.route_to_digest("GP access target by 2028", [0.99, 0.0], facets, 5.0, "vector_search", digest)
 
     assert digest.inserted == []  # no new cluster
@@ -127,7 +127,7 @@ def test_build_digest_groups_by_setting_and_sorts() -> None:
         documents=[
             {
                 "canonical_query": "A&E plans?",
-                "care_settings": ["Acute"],
+                "care_settings": ["Secondary care"],
                 "professional_groups": ["Medical"],
                 "asked_count": 1,
                 "best_score": 4.0,
@@ -135,7 +135,7 @@ def test_build_digest_groups_by_setting_and_sorts() -> None:
             },
             {
                 "canonical_query": "Elective waiting list?",
-                "care_settings": ["Acute"],
+                "care_settings": ["Secondary care"],
                 "professional_groups": [],
                 "asked_count": 3,
                 "best_score": 5.0,
@@ -145,19 +145,19 @@ def test_build_digest_groups_by_setting_and_sorts() -> None:
     )
     result = router.build_digest("setting", digest)
     assert result["facet"] == "setting"
-    acute = next(g for g in result["groups"] if g["key"] == "Acute")
-    assert acute["count"] == 2
+    secondary = next(g for g in result["groups"] if g["key"] == "Secondary care")
+    assert secondary["count"] == 2
     # Most-asked question comes first.
-    assert acute["queries"][0]["query"] == "Elective waiting list?"
-    assert acute["queries"][0]["asked_count"] == 3
+    assert secondary["queries"][0]["query"] == "Elective waiting list?"
+    assert secondary["queries"][0]["asked_count"] == 3
 
 
 def test_build_digest_multi_label_appears_in_each_group() -> None:
     digest = FakeCollection(
         documents=[
             {
-                "canonical_query": "mental health staffing in acute trusts",
-                "care_settings": ["Acute", "Mental Health and Learning Disability"],
+                "canonical_query": "GP referrals into hospital mental health services",
+                "care_settings": ["Secondary care", "Primary care"],
                 "professional_groups": ["Medical"],
                 "asked_count": 2,
                 "best_score": 4.0,
@@ -166,7 +166,7 @@ def test_build_digest_multi_label_appears_in_each_group() -> None:
         ]
     )
     keys = {g["key"] for g in router.build_digest("setting", digest)["groups"]}
-    assert keys == {"Acute", "Mental Health and Learning Disability"}
+    assert keys == {"Secondary care", "Primary care"}
 
 
 def test_build_digest_omits_empty_groups() -> None:
@@ -180,11 +180,11 @@ def test_build_digest_falls_back_to_setting_for_unknown_facet() -> None:
 
 
 def test_build_digest_caps_each_group_at_top_n() -> None:
-    # 12 distinct Acute questions; only the 10 most-asked should be returned.
+    # 12 distinct Secondary care questions; only the 10 most-asked are returned.
     documents = [
         {
-            "canonical_query": f"acute question {i}",
-            "care_settings": ["Acute"],
+            "canonical_query": f"secondary care question {i}",
+            "care_settings": ["Secondary care"],
             "professional_groups": [],
             "asked_count": i,
             "best_score": 4.0,
@@ -194,11 +194,12 @@ def test_build_digest_caps_each_group_at_top_n() -> None:
     ]
     digest = FakeCollection(documents=documents)
 
-    acute = next(g for g in router.build_digest("setting", digest)["groups"] if g["key"] == "Acute")
+    groups = router.build_digest("setting", digest)["groups"]
+    secondary = next(g for g in groups if g["key"] == "Secondary care")
 
-    assert len(acute["queries"]) == router.DIGEST_TOP_N == 10
-    assert acute["count"] == 10
-    assert acute["total"] == 12
+    assert len(secondary["queries"]) == router.DIGEST_TOP_N == 10
+    assert secondary["count"] == 10
+    assert secondary["total"] == 12
     # Ranked most-asked first; the two least-asked (1, 2) are dropped.
-    assert acute["queries"][0]["asked_count"] == 12
-    assert acute["queries"][-1]["asked_count"] == 3
+    assert secondary["queries"][0]["asked_count"] == 12
+    assert secondary["queries"][-1]["asked_count"] == 3

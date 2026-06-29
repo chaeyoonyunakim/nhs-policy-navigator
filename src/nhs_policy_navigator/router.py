@@ -33,12 +33,9 @@ logger = get_logger(__name__)
 # multi-label: a query may appear under several settings and/or groups.
 
 CARE_SETTINGS: tuple[str, ...] = (
-    "Acute",
-    "Ambulance",
-    "Community",
-    "Mental Health and Learning Disability",
-    "Primary Care",
-    "Primary Care - Wider Primary Care",
+    "Secondary care",
+    "Primary care",
+    "Wider Primary care",
 )
 
 PROFESSIONAL_GROUPS: tuple[str, ...] = (
@@ -52,20 +49,19 @@ PROFESSIONAL_GROUPS: tuple[str, ...] = (
 DEDUP_THRESHOLD = 0.92
 
 # Definitions handed to the tagger so close categories do not bleed together.
-# "Wider Primary Care" is community/high-street pharmacy and dentistry; plain
-# "Primary Care" is GP / general practice.
+# Three top-level settings: "Secondary care" gathers hospital/acute, ambulance,
+# community and mental health & learning disability; "Primary care" is GP /
+# general practice and PCNs; "Wider Primary care" is community / high-street
+# pharmacy and dentistry.
 _TAG_PROMPT = (
     "Tag this NHS policy query with the NHS domains it relates to. "
     "A query can match several tags, one, or none.\n\n"
     "CARE SETTING -- choose any that apply:\n"
-    "- Acute: hospital-based acute, emergency and elective care\n"
-    "- Ambulance: ambulance services and urgent patient transport\n"
-    "- Community: community health services delivered outside hospital\n"
-    "- Mental Health and Learning Disability: mental health, learning "
-    "disability and autism services\n"
-    "- Primary Care: GP and general practice\n"
-    "- Primary Care - Wider Primary Care: community / high-street pharmacy and "
-    "dentistry\n\n"
+    "- Secondary care: hospital-based acute, emergency and elective care; "
+    "ambulance services; community health services; and mental health and "
+    "learning disability services\n"
+    "- Primary care: GP / general practice and Primary Care Networks (PCNs)\n"
+    "- Wider Primary care: community / high-street pharmacy and dentistry\n\n"
     "PROFESSIONAL GROUP -- choose any that apply:\n"
     "- Medical: doctors and the medical workforce\n"
     "- Clinical non-medical: nurses, allied health professionals and other "
