@@ -194,7 +194,8 @@ def test_build_digest_caps_each_group_at_top_n() -> None:
     ]
     digest = FakeCollection(documents=documents)
 
-    secondary = next(g for g in router.build_digest("setting", digest)["groups"] if g["key"] == "Secondary care")
+    groups = router.build_digest("setting", digest)["groups"]
+    secondary = next(g for g in groups if g["key"] == "Secondary care")
 
     assert len(secondary["queries"]) == router.DIGEST_TOP_N == 10
     assert secondary["count"] == 10

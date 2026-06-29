@@ -147,9 +147,8 @@ def test_evaluate_relevance_defaults_on_error(monkeypatch: pytest.MonkeyPatch) -
 
 def test_adaptive_retrieve_logs_and_returns(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(agent, "classify_query", lambda _q: "factual")
-    monkeypatch.setattr(
-        agent, "tag_facets", lambda _q: {"care_settings": ["Secondary care"], "professional_groups": ["Medical"]}
-    )
+    facets = {"care_settings": ["Secondary care"], "professional_groups": ["Medical"]}
+    monkeypatch.setattr(agent, "tag_facets", lambda _q: facets)
     monkeypatch.setattr(agent, "_retrieve", lambda *_a: [{"text": "chunk", "source": "full_plan", "page": 1}])
     monkeypatch.setattr(agent, "rerank_chunks", lambda _q, chunks: chunks)
     monkeypatch.setattr(agent, "generate_answer", lambda *_a: "answer")
