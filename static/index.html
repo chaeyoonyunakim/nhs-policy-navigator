@@ -715,12 +715,9 @@
       <label for="prevSetting">Care setting</label>
       <select id="prevSetting" onchange="loadPreviousQueries(1)">
         <option value="">All care settings</option>
-        <option value="Acute">Acute</option>
-        <option value="Ambulance">Ambulance</option>
-        <option value="Community">Community</option>
-        <option value="Mental Health and Learning Disability">Mental Health &amp; Learning Disability</option>
-        <option value="Primary Care">Primary Care</option>
-        <option value="Primary Care - Wider Primary Care">Primary Care — Wider Primary Care</option>
+        <option value="Secondary care">Secondary care</option>
+        <option value="Primary care">Primary care</option>
+        <option value="Wider Primary care">Wider Primary care</option>
       </select>
       <label for="prevGroup">Professional group</label>
       <select id="prevGroup" onchange="loadPreviousQueries(1)">
@@ -942,11 +939,10 @@
   }
   attachQueryListClicks(document.getElementById("prevList"));
 
-  // Shorten the long canonical taxonomy labels for compact chips.
-  const FACET_SHORT = {
-    "Mental Health and Learning Disability": "Mental Health & LD",
-    "Primary Care - Wider Primary Care": "Wider Primary Care"
-  };
+  // Optional short labels for compact chips. The care-setting taxonomy is now
+  // already concise (Secondary care / Primary care / Wider Primary care), so
+  // there is nothing to abbreviate; kept for any future long group labels.
+  const FACET_SHORT = {};
   function shortFacet(name) { return FACET_SHORT[name] || name; }
 
   function facetChipsHtml(r) {
