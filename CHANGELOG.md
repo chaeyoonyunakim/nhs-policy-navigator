@@ -32,10 +32,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   queries" card is replaced by a "View all previous queries →" link to the
   Previous Queries tab.
 - Replaced the "Queries processed" counter card with a **"This query"** metrics
-  legend that explains the latest answer's type, sources, strategy,
-  default-vs-learned selection and relevance score in plain English. The total
-  query count moved onto the Query Router digest header (replacing the static
-  "ROUTER" chip).
+  legend that explains the latest answer's type, sources and strategy in plain
+  English. The total query count moved onto the Query Router digest header
+  (replacing the static "ROUTER" chip).
 
 ### Removed
 
