@@ -209,7 +209,6 @@
   .tag-vector  { background: #e5f0f8; color: #005EB8; border-color: #adc3e8; }
   .tag-hybrid  { background: #eaf3de; color: #00401a; border-color: #9bc85e; }
   .tag-text    { background: #fff5e0; color: #6a4000; border-color: #f5c06b; }
-  .tag-learned { background: #f0e8f8; color: #3d0079; border-color: #c6a0e8; }
   .tag-plan    { background: #e5f0f8; color: #005EB8; border-color: #adc3e8; }
   .tag-news    { background: #e8f5e9; color: #00401a; border-color: #81c784; }
   .tag-pub     { background: #fff3e0; color: #7c4600; border-color: #ffb74d; }
@@ -332,7 +331,6 @@
     min-width: 66px;
   }
   .metric-desc { font-size: 12px; color: #4c6272; margin-top: 5px; line-height: 1.45; }
-  .tag-score { background: #eef1f4; color: #4c6272; border-color: #cdd7de; }
   .digest-tag.total-tag { background: #768692; }
 
   .recent-item {
@@ -385,8 +383,6 @@
     align-items: center;
   }
   .rq-type { color: #005EB8; font-weight: 600; }
-  .rq-score { color: #007f3b; font-weight: 600; }
-  .rq-learned { color: #7b00d4; font-size: 10px; }
 
   .no-data { font-size: 12px; color: #aeb7bd; text-align: center; padding: 10px 0; }
 
@@ -808,9 +804,6 @@
     if (sources.includes("news")) meta += `<span class="tag tag-news">&#128240; Live News</span>`;
     if (sources.includes("publications")) meta += `<span class="tag tag-pub">&#128218; Publications</span>`;
     meta += `<span class="tag ${stratClass[data.strategy] || 'tag-vector'}">${stratLabel[data.strategy] || data.strategy}</span>`;
-    if (data.strategy_source === "learned") {
-      meta += `<span class="tag tag-learned">&#129504; Learned</span>`;
-    }
     document.getElementById("metaRow").innerHTML = meta;
 
     // "This query" legend: each selected metric with a plain-English description.
@@ -827,8 +820,6 @@
     };
     const sourceLabel = { plan: "NHS Plan", news: "Live News", publications: "Publications" };
     const sourcesText = sources.map(s => sourceLabel[s] || s).join(" + ");
-    const learned = data.strategy_source === "learned";
-    const score = Number(data.relevance_score || 0).toFixed(1);
 
     const metricRow = (label, chipHtml, desc) => `
       <div class="metric-row">
@@ -845,15 +836,7 @@
         "which corpora were searched for this query type") +
       metricRow("Strategy",
         `<span class="tag ${stratClass[data.strategy] || 'tag-vector'}">${stratLabel[data.strategy] || data.strategy}</span>`,
-        stratDesc[data.strategy] || "how it searched the NHS plan") +
-      metricRow("Selection",
-        `<span class="tag ${learned ? 'tag-learned' : 'tag-type'}">${learned ? '&#129504; Learned' : 'Default'}</span>`,
-        learned
-          ? "strategy chosen from past performance (5+ prior queries of this type)"
-          : "preset default strategy for this query type") +
-      metricRow("Relevance",
-        `<span class="tag tag-score">${score}/5</span>`,
-        "the agent's self-rated quality of the retrieved context");
+        stratDesc[data.strategy] || "how it searched the NHS plan");
 
     document.getElementById("answerText").textContent = data.answer;
 
@@ -956,7 +939,6 @@
 
   function queryItemHtml(r, withTime) {
     const q = escapeHtml(r.query);
-    const score = Number(r.relevance_score || 0).toFixed(1);
     const when = withTime && r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
     return `
       <div class="recent-item">
@@ -967,8 +949,6 @@
         <div class="rq-meta">
           <span class="rq-type">${escapeHtml(r.query_type)}</span>
           <span>${escapeHtml(r.strategy).replace(/_/g,' ')}</span>
-          <span class="rq-score">${score}/5</span>
-          ${r.strategy_source === 'learned' ? '<span class="rq-learned">LEARNED</span>' : ''}
           ${when ? `<span class="rq-time">${escapeHtml(when)}</span>` : ''}
         </div>
         ${facetChipsHtml(r)}
