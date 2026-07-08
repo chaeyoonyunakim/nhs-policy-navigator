@@ -10,6 +10,7 @@ before retrieving, then logs every decision so it can adapt over time.
 - [Architecture](architecture.md) — components, data flow and the retrieval pipeline.
 - [User guide](user_guide.md) — setup, running the app and the data pipeline.
 - [RAP compliance](rap_compliance.md) — how this repository meets each RAP level.
+- [Sprint 01 retrospective](retrospectives/sprint-01.md) — process log, decisions and carry-over.
 
 ## Quick links
 
