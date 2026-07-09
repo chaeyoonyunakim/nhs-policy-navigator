@@ -80,7 +80,7 @@ append-only log, filterable by facet.
 | Concern | Service | Notes |
 |---|---|---|
 | Database | MongoDB Atlas M0 | Free tier, vector + full-text search. |
-| Embeddings | Gemini `gemini-embedding-001` (768 dims) | Free tier. |
+| Embeddings | Gemini `gemini-embedding-001` (3072 dims) | Free tier. |
 | Generation | Gemini `gemini-2.0-flash` (+ fallbacks) | Free tier, REST API. |
 | Live sources | NHS England RSS feed | Fetched at query time. |
 

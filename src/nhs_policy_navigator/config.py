@@ -48,7 +48,7 @@ class Settings:
     log_collection: str = "query_log"
     digest_collection: str = "query_digest"
     embedding_model: str = "gemini-embedding-001"
-    embedding_dimensions: int = 768
+    embedding_dimensions: int = 3072
     generate_models: tuple[str, ...] = (
         "gemini-2.0-flash",
         "gemini-2.0-flash-lite",

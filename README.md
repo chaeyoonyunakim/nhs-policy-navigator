@@ -43,7 +43,7 @@ A **Query Router** runs alongside retrieval. It tags every query (multi-label) w
 | Layer | Technology |
 |---|---|
 | Database | MongoDB Atlas M0 — Vector Search + Full-Text Search |
-| Embeddings | Google `gemini-embedding-001` (768 dims) |
+| Embeddings | Google `gemini-embedding-001` (3072 dims) |
 | LLM | Google `gemini-2.0-flash` (with fallback to `gemini-2.0-flash-lite`, `gemini-2.5-flash`) |
 | Backend | Python / FastAPI |
 | Frontend | Vanilla HTML/JS (single file) |
@@ -120,7 +120,7 @@ Download both PDFs from [https://www.england.nhs.uk/long-term-plan/](https://www
 
 ### 5. Restore the MongoDB data from the dump (recommended)
 
-The repository includes a pre-built dump of all 586 embedded chunks (using `gemini-embedding-001`, 768 dims). This is the fastest way to get started — no PDF ingestion or embedding calls needed:
+The repository includes a pre-built dump of all 586 embedded chunks (using `gemini-embedding-001`, 3072 dims). This is the fastest way to get started — no PDF ingestion or embedding calls needed:
 
 ```bash
 mongoimport --uri "$MONGODB_URI" --db agentic-evolution-hackathon \
@@ -135,7 +135,7 @@ Then create both Atlas Search indexes manually in the Atlas UI (see [MongoDB Atl
 make ingest        # or: python -m nhs_policy_navigator.pipeline.ingest
 ```
 
-This chunks both PDFs, generates `gemini-embedding-001` embeddings (768 dims), loads all chunks into MongoDB Atlas, and creates both search indexes automatically. Takes ~5–10 minutes.
+This chunks both PDFs, generates `gemini-embedding-001` embeddings (3072 dims), loads all chunks into MongoDB Atlas, and creates both search indexes automatically. Takes ~5–10 minutes.
 
 Wait for both indexes to show **READY** in Atlas UI → Cluster → Search Indexes before running the app.
 
@@ -198,13 +198,13 @@ Two indexes are created automatically by `ingest.py`:
   "fields": [{
     "type": "vector",
     "path": "embedding",
-    "numDimensions": 768,
+    "numDimensions": 3072,
     "similarity": "cosine"
   }]
 }
 ```
 
-> ⚠️ `numDimensions` must be **768** to match `gemini-embedding-001`. Using 1536 (OpenAI) will cause vector search to return no results.
+> ⚠️ `numDimensions` must be **3072** to match the default output of `gemini-embedding-001`. Any other value (e.g. 768 or 1536) will cause vector search to return no results.
 
 **Text search index** (`text_index`, type: `search`):
 ```json

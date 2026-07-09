@@ -30,7 +30,7 @@ def test_from_env_raises_when_credentials_missing(monkeypatch: pytest.MonkeyPatc
 def test_defaults_are_sensible() -> None:
     settings = Settings(mongodb_uri="x", google_api_key="y")
 
-    assert settings.embedding_dimensions == 768
+    assert settings.embedding_dimensions == 3072
     assert settings.generate_models[0] == "gemini-2.0-flash"
     assert settings.plan_cutoff == "2025-07-03"
 
